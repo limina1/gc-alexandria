@@ -13,6 +13,9 @@
     "format": "prettier --plugin-search-dir . --write ."
   },
   "dependencies": {
+    "@langchain/anthropic": "^0.3.11",
+    "@langchain/community": "^0.3.22",
+    "@langchain/core": "^0.3.27",
     "@nostr-dev-kit/ndk": "2.10.x",
     "@nostr-dev-kit/ndk-cache-dexie": "2.5.x",
     "@popperjs/core": "2.11.x",
