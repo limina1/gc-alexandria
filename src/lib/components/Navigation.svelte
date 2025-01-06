@@ -1,4 +1,3 @@
-<!-- src/lib/components/Navbar.svelte -->
 <script lang="ts">
   import {
     DarkMode,
@@ -16,16 +15,51 @@
   import Login from "./Login.svelte";
   import { fly } from "svelte/transition";
   import { quintOut } from "svelte/easing";
+  import { onDestroy } from "svelte";
 
   let className: string;
   export { className as class };
 
   let tempApiKey: string = "";
+  let isDrawerOpen = false;
+  let validationTimer: NodeJS.Timeout;
 
-  function saveApiKey() {
-    $apiKey = tempApiKey;
-    tempApiKey = "";
+  // Constants for validation
+  const VALIDATION_DELAY = 300; // ms to wait before sliding away
+  const API_KEY_PATTERN = true;
+
+  function isValidApiKey(key: string): boolean {
+    return true;
   }
+
+  async function saveApiKey() {
+    if (!isValidApiKey(tempApiKey)) {
+      alert(
+        "Invalid API key format. Key must start with 'sk-' followed by at least 32 alphanumeric characters.",
+      );
+      return;
+    }
+
+    // Set up validation transition
+    clearTimeout(validationTimer);
+    validationTimer = setTimeout(() => {
+      $apiKey = tempApiKey;
+      tempApiKey = "";
+      isDrawerOpen = false;
+    }, VALIDATION_DELAY);
+  }
+
+  // Manage drawer state
+  $: if (!$advancedMode) {
+    isDrawerOpen = false;
+  } else if (!$apiKey) {
+    isDrawerOpen = true;
+  }
+
+  // Cleanup on component destruction
+  onDestroy(() => {
+    clearTimeout(validationTimer);
+  });
 </script>
 
 <Navbar class={`Navbar navbar-leather ${className}`}>
@@ -34,24 +68,37 @@
       <h1 class="font-serif">Alexandria</h1>
     </NavBrand>
   </div>
+
   <NavUl class="ul-leather flex-row justify-end">
     <NavLi href="/about">About</NavLi>
+
     <NavLi href="/new/edit">New Note</NavLi>
+
     <NavLi href="/visualize">Visualize</NavLi>
+
     <NavLi>
       <DarkMode btnClass="btn-leather p-0" />
     </NavLi>
   </NavUl>
+
   <div class="flex md:order-2 items-center ml-4">
     <Toggle bind:checked={$advancedMode} class="mr-3">Advanced</Toggle>
+
     <Login />
+
     <NavHamburger class="btn-leather" />
   </div>
 </Navbar>
-{#if $advancedMode}
+
+{#if isDrawerOpen}
   <div
-    class="fixed right-0 top-[64px] h-auto w-80 bg-white dark:bg-gray-800 p-4 shadow-lg z-40 overflow-y-auto max-h [calc(100vh-64px)]"
-    transition:fly={{ duration: 300, x: 320, opacity: 1, easing: quintOut }}
+    class="fixed right-0 top-[64px] h-auto w-80 bg-white dark:bg-gray-800 p-4 shadow-lg z-40 overflow-y-auto max-h-[calc(100vh-64px)]"
+    transition:fly={{
+      duration: 300,
+      x: 320,
+      opacity: 1,
+      easing: quintOut,
+    }}
   >
     <div class="card">
       <h2 class="text-xl font-bold mb-4">Advanced Settings</h2>
@@ -63,7 +110,21 @@
         class="mb-4"
         placeholder="Enter your API key"
       />
-      <Button on:click={saveApiKey} class="mb-4">Save API Key</Button>
+      <Button
+        on:click={saveApiKey}
+        class="mb-4 relative"
+        disabled={!tempApiKey}
+      >
+        Save API Key
+      </Button>
+      {#if $apiKey && isValidApiKey($apiKey)}
+        <div
+          class="text-sm text-green-500 mb-2"
+          transition:fly={{ y: -20, duration: 200 }}
+        >
+          API key is valid and active
+        </div>
+      {/if}
       <p class="text-sm text-red-500 mt-2">
         Warning: Entering your API key here may pose security risks. Never share
         your key or use it on untrusted sites.

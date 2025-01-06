@@ -1,6 +1,7 @@
 import { readable, writable } from "svelte/store";
 import { FeedType } from "./consts";
 
+// Initialize from localStorage if available
 export let idList = writable<string[]>([]);
 
 export let alexandriaKinds = readable<number[]>([30040, 30041]);

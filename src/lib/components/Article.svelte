@@ -14,6 +14,7 @@
   import Preview from "./Preview.svelte";
   import { pharosInstance } from "$lib/parser";
   import { page } from "$app/state";
+  import { advancedMode } from "$lib/stores";
 
   let { rootId }: { rootId: string } = $props();
 
