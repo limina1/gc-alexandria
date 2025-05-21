@@ -14,11 +14,12 @@
   import type NDK from "@nostr-dev-kit/ndk";
   import { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
   // @ts-ignore - Workaround for Svelte component import issue
-  import LoginModal from "$lib/components/LoginModal.svelte";
-  import { parseAdvancedmarkup } from "$lib/utils/markup/advancedMarkupParser";
-  import { nip19 } from "nostr-tools";
-  import { getMimeTags } from "$lib/utils/mime";
-
+  import LoginModal from '$lib/components/LoginModal.svelte';
+  import { parseAdvancedmarkup } from '$lib/utils/markup/advancedMarkupParser';
+  import { nip19 } from 'nostr-tools';
+  import { getMimeTags } from '$lib/utils/mime';
+  import { userBadge } from '$lib/snippets/UserSnippets.svelte';
+  
   // Function to close the success message
   function closeSuccessMessage() {
     submissionSuccess = false;

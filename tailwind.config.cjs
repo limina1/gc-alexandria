@@ -88,9 +88,17 @@ const config = {
         },
       },
       listStyleType: {
-        "upper-alpha": "upper-alpha", // Uppercase letters
-        "lower-alpha": "lower-alpha", // Lowercase letters
+        'upper-alpha': 'upper-alpha', // Uppercase letters
+        'lower-alpha': 'lower-alpha', // Lowercase letters
       },
+      flexGrow: {
+        '1': '1',
+        '2': '2',
+        '3': '3',
+      },
+      hueRotate: {
+        20: '20deg',
+      }
     },
   },
   plugins: [
