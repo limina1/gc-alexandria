@@ -315,7 +315,7 @@
       an issue, that will appear on our repo page.
     </P>
 
-    <form class="space-y-4" on:submit={handleSubmit} autocomplete="off">
+    <form class="space-y-4" onsubmit={handleSubmit} autocomplete="off">
       <div>
         <Label for="subject" class="mb-2">Subject</Label>
         <Input
@@ -346,10 +346,8 @@
                 <li class="mr-2" role="presentation">
                   <button
                     type="button"
-                    class="inline-block p-4 rounded-t-lg {activeTab === 'write'
-                      ? 'border-b-2 border-primary-600 text-primary-600'
-                      : 'hover:text-gray-600 hover:border-gray-300'}"
-                    on:click={() => (activeTab = "write")}
+                    class="inline-block p-4 rounded-t-lg {activeTab === 'write' ? 'border-b-2 border-primary-600 text-primary-600' : 'hover:text-gray-600 hover:border-gray-300'}"
+                    onclick={() => activeTab = 'write'}
                     role="tab"
                   >
                     Write
@@ -358,11 +356,8 @@
                 <li role="presentation">
                   <button
                     type="button"
-                    class="inline-block p-4 rounded-t-lg {activeTab ===
-                    'preview'
-                      ? 'border-b-2 border-primary-600 text-primary-600'
-                      : 'hover:text-gray-600 hover:border-gray-300'}"
-                    on:click={() => (activeTab = "preview")}
+                    class="inline-block p-4 rounded-t-lg {activeTab === 'preview' ? 'border-b-2 border-primary-600 text-primary-600' : 'hover:text-gray-600 hover:border-gray-300'}"
+                    onclick={() => activeTab = 'preview'}
                     role="tab"
                   >
                     Preview
@@ -471,7 +466,7 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
           <!-- Close button -->
           <button
             class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-            on:click={closeSuccessMessage}
+            onclick={closeSuccessMessage}
             aria-label="Close"
           >
             <svg
