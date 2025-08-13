@@ -17,15 +17,16 @@
   }
 
   .legend-circle.content {
-    @apply bg-primary-100 dark:bg-primary-300;
+    @apply bg-gray-700 dark:bg-gray-300;
+    background-color: #d6c1a8;
   }
 
   .legend-circle.content {
-    background-color: var(--content-color, #d1f0db);
+    background-color: var(--content-color, #d6c1a8);
   }
 
   :global(.dark) .legend-circle.content {
-    background-color: var(--content-color-dark, #76d293);
+    background-color: var(--content-color-dark, #ffffff);
   }
 
   .legend-letter {
@@ -47,7 +48,7 @@
 
   .network-svg {
     @apply w-full sm:h-[100%] border;
-    @apply border border-primary-200 has-[:hover]:border-accent-500 dark:bg-primary-950 dark:border-primary-700 dark:has-[:hover]:bg-primary-900 dark:has-[:hover]:border-accent-400 rounded;
+    @apply border border-primary-200 has-[:hover]:border-primary-700 dark:bg-primary-1000 dark:border-primary-800 dark:has-[:hover]:bg-primary-950 dark:has-[:hover]:border-primary-500 rounded;
   }
 
   .network-error {
@@ -90,7 +91,7 @@
   }
 
   .tooltip-title-link {
-    @apply text-gray-800 hover:text-accent-500 dark:text-gray-200 dark:hover:text-accent-400;
+    @apply text-gray-800 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400;
   }
 
   .tooltip-metadata {
@@ -107,5 +108,71 @@
 
   .tooltip-help-text {
     @apply mt-2 text-xs text-gray-500 dark:text-gray-400 italic;
+  }
+
+  /* Star network visualization styles */
+  .star-center-node {
+    @apply transition-all duration-300;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .star-center-node:hover {
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.3));
+    transform: scale(1.05);
+  }
+
+  .network-node-content {
+    @apply transition-all duration-200;
+  }
+
+  .network-node-content:hover {
+    @apply transform scale-110;
+    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.3));
+  }
+
+  /* Tag anchor nodes */
+  .tag-anchor-node {
+    @apply transition-all duration-300;
+    stroke: rgba(255, 255, 255, 0.8);
+    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
+    cursor: default !important;
+  }
+
+  .tag-anchor-node:hover {
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.6));
+    transform: scale(1.1);
+  }
+
+  /* Ensure drag cursor doesn't appear on tag anchors */
+  .node.drag-circle {
+    cursor: move;
+  }
+
+  .node.tag-anchor-node .drag-circle {
+    cursor: default !important;
+  }
+
+  /* Tag grid layout in legend */
+  .tag-grid {
+    display: grid;
+    gap: 0.5rem; /* Change this value to adjust spacing between columns and rows */
+    column-gap: 1.75rem; /* Use this to set column spacing independently */
+    row-gap: 0.5rem; /* Use this to set row spacing independently */
+    width: 100%;
+  }
+
+  .tag-grid-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow: hidden;
+  }
+
+  .tag-grid-item .legend-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
   }
 }

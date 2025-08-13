@@ -9,17 +9,18 @@
     Input,
     Modal,
   } from "flowbite-svelte";
-  import { ndkSignedIn, ndkInstance } from "$lib/ndk";
-  import { standardRelays } from "$lib/consts";
+  import { ndkInstance, ndkSignedIn, activeInboxRelays, activeOutboxRelays } from "$lib/ndk";
+  import { userStore } from "$lib/stores/userStore";
+  import { communityRelays } from "$lib/consts";
   import type NDK from "@nostr-dev-kit/ndk";
   import { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
   // @ts-ignore - Workaround for Svelte component import issue
-  import LoginModal from '$lib/components/LoginModal.svelte';
-  import { parseAdvancedmarkup } from '$lib/utils/markup/advancedMarkupParser';
-  import { nip19 } from 'nostr-tools';
-  import { getMimeTags } from '$lib/utils/mime';
-  import { userBadge } from '$lib/snippets/UserSnippets.svelte';
-  
+  import LoginModal from "$lib/components/LoginModal.svelte";
+  import { parseAdvancedmarkup } from "$lib/utils/markup/advancedMarkupParser";
+  import { nip19 } from "nostr-tools";
+  import { getMimeTags } from "$lib/utils/mime";
+  import { userBadge } from "$lib/snippets/UserSnippets.svelte";
+
   // Function to close the success message
   function closeSuccessMessage() {
     submissionSuccess = false;
@@ -53,12 +54,22 @@
     content: "",
   };
 
+  // Subscribe to userStore
+  let user = $state($userStore);
+  userStore.subscribe((val) => (user = val));
+
   // Repository event address from the task
   const repoAddress =
     "naddr1qvzqqqrhnypzplfq3m5v3u5r0q9f255fdeyz8nyac6lagssx8zy4wugxjs8ajf7pqy88wumn8ghj7mn0wvhxcmmv9uqq5stvv4uxzmnywf5kz2elajr";
 
-  // Hard-coded relays to ensure we have working relays
-  const allRelays = [...standardRelays];
+  // Use the new relay management system instead of hardcoded relays
+  const allRelays = [
+    "wss://relay.damus.io",
+    "wss://relay.nostr.band",
+    "wss://nos.lol",
+    ...$activeInboxRelays,
+    ...$activeOutboxRelays,
+  ];
 
   // Hard-coded repository owner pubkey and ID from the task
   // These values are extracted from the naddr
@@ -85,7 +96,7 @@
     }
 
     // Check if user is logged in
-    if (!$ndkSignedIn) {
+    if (!user.signedIn) {
       // Save form data
       savedFormData = {
         subject,
@@ -202,8 +213,7 @@
         ...(ndk.pool
           ? Array.from(ndk.pool.relays.values())
               .filter(
-                (relay) =>
-                  relay.url && !relay.url.includes("wss://medschlr.nostr1.com"),
+                (relay) => relay.url && !relay.url.includes("wss://nos.lol"),
               )
               .map((relay) => normalizeRelayUrl(relay.url))
           : []),
@@ -268,7 +278,7 @@
 
   // Handle login completion
   $effect(() => {
-    if ($ndkSignedIn && showLoginModal) {
+    if (user.signedIn && showLoginModal) {
       showLoginModal = false;
 
       // Restore saved form data
@@ -297,11 +307,10 @@
     </P>
 
     <P class="mb-3">
-      You can contact us on Nostr <A
-        href="https://njump.me/nprofile1qqsggm4l0xs23qfjwnkfwf6fqcs66s3lz637gaxhl4nwd2vtle8rnfqprfmhxue69uhhg6r9vehhyetnwshxummnw3erztnrdaks5zhueg"
-        title="npub1s3ht77dq4zqnya8vjun5jp3p44pr794ru36d0ltxu65chljw8xjqd975wz"
-        target="_blank">GitCitadel</A
-      > or you can view submitted issues on the <A
+      You can contact us on Nostr {@render userBadge(
+        "npub1s3ht77dq4zqnya8vjun5jp3p44pr794ru36d0ltxu65chljw8xjqd975wz",
+        "GitCitadel",
+      )} or you can view submitted issues on the <A
         href="https://gitcitadel.com/r/naddr1qvzqqqrhnypzquqjyy5zww7uq7hehemjt7juf0q0c9rgv6lv8r2yxcxuf0rvcx9eqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwdehhxarj9e3xzmny9uqsuamnwvaz7tmwdaejumr0dshsqzjpd3jhsctwv3exjcgtpg0n0/issues"
         target="_blank">Alexandria repo page.</A
       >
@@ -346,8 +355,10 @@
                 <li class="mr-2" role="presentation">
                   <button
                     type="button"
-                    class="inline-block p-4 rounded-t-lg {activeTab === 'write' ? 'border-b-2 border-primary-600 text-primary-600' : 'hover:text-gray-600 hover:border-gray-300'}"
-                    onclick={() => activeTab = 'write'}
+                    class="inline-block p-4 rounded-t-lg {activeTab === 'write'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'hover:text-gray-600 hover:border-gray-300'}"
+                    onclick={() => (activeTab = "write")}
                     role="tab"
                   >
                     Write
@@ -356,8 +367,11 @@
                 <li role="presentation">
                   <button
                     type="button"
-                    class="inline-block p-4 rounded-t-lg {activeTab === 'preview' ? 'border-b-2 border-primary-600 text-primary-600' : 'hover:text-gray-600 hover:border-gray-300'}"
-                    onclick={() => activeTab = 'preview'}
+                    class="inline-block p-4 rounded-t-lg {activeTab ===
+                    'preview'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'hover:text-gray-600 hover:border-gray-300'}"
+                    onclick={() => (activeTab = "preview")}
                     role="tab"
                   >
                     Preview
@@ -371,7 +385,7 @@
                 <div class="absolute inset-0 overflow-hidden">
                   <Textarea
                     id="content"
-                    class="w-full h-full resize-none bg-primary-0 dark:bg-primary-1000 text-gray-800 dark:text-gray-300 border-s-4 border-primary-200 rounded-b-lg rounded-t-none shadow-none px-4 py-2 focus:border-primary-400 dark:focus:border-primary-500"
+                    class="w-full h-full resize-none bg-primary-0 dark:bg-primary-1000 text-gray-900 dark:text-gray-100 border-s-4 border-primary-200 rounded-b-lg rounded-t-none shadow-none px-4 py-2 focus:border-primary-600 dark:focus:border-primary-400"
                     bind:value={content}
                     required
                     placeholder="Describe your issue in detail...
@@ -422,7 +436,7 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
                       <p>Loading preview...</p>
                     {:then html}
                       {@html html ||
-                        '<p class="text-gray-500">Nothing to preview</p>'}
+                        '<p class="text-gray-700 dark:text-gray-300">Nothing to preview</p>'}
                     {:catch error}
                       <p class="text-red-500">
                         Error rendering preview: {error.message}
@@ -438,7 +452,7 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
             size="xs"
             class="absolute bottom-2 right-2 z-10 opacity-60 hover:opacity-100"
             color="light"
-            on:click={toggleSize}
+            onclick={toggleSize}
           >
             {isExpanded ? "⌃" : "⌄"}
           </Button>
@@ -446,7 +460,7 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
       </div>
 
       <div class="flex justify-end space-x-4">
-        <Button type="button" color="alternative" on:click={clearForm}>
+        <Button type="button" color="alternative" onclick={clearForm}>
           Clear Form
         </Button>
         <Button type="submit" tabindex={0}>
@@ -465,7 +479,7 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
         >
           <!-- Close button -->
           <button
-            class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+            class="absolute top-2 right-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
             onclick={closeSuccessMessage}
             aria-label="Close"
           >
@@ -569,12 +583,12 @@ Also renders nostr identifiers: npubs, nprofiles, nevents, notes, and naddrs. Wi
 <!-- Confirmation Dialog -->
 <Modal bind:open={showConfirmDialog} size="sm" autoclose={false} class="w-full">
   <div class="text-center">
-    <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+    <h3 class="mb-5 text-lg font-normal text-gray-700 dark:text-gray-300">
       Would you like to submit the issue?
     </h3>
     <div class="flex justify-center gap-4">
-      <Button color="alternative" on:click={cancelSubmit}>Cancel</Button>
-      <Button color="primary" on:click={confirmSubmit}>Submit</Button>
+      <Button color="alternative" onclick={cancelSubmit}>Cancel</Button>
+      <Button color="primary" onclick={confirmSubmit}>Submit</Button>
     </div>
   </div>
 </Modal>
