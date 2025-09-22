@@ -1,18 +1,38 @@
-FROM denoland/deno:alpine-2.4.2 AS build
-WORKDIR /app/src
+# Use Node.js 20
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --production=false
+
+# Copy source code
 COPY . .
 
-RUN deno install
-RUN deno task build
+# Build the application
+RUN npm run build
 
-FROM denoland/deno:alpine AS release
+# Production stage
+FROM node:20-alpine AS release
+
 WORKDIR /app
-COPY --from=build /app/src/build/ ./build/
-COPY --from=build /app/src/import_map.json .
 
+# Copy built application
+COPY --from=build /app/build ./build
+COPY --from=build /app/package*.json ./
+
+# Install only production dependencies
+RUN npm ci --production
+
+# Set environment
+ENV NODE_ENV=production
 ENV ORIGIN=http://localhost:3000
 
-RUN deno cache --import-map=import_map.json ./build/index.js
-
+# Expose port
 EXPOSE 3000
-CMD [ "deno", "run", "--allow-env", "--allow-read", "--allow-net=0.0.0.0:3000", "--allow-sys=homedir", "--import-map=import_map.json", "./build/index.js" ]
+
+# Start the application
+CMD ["node", "build/index.js"]
