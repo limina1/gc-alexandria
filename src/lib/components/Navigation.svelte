@@ -18,11 +18,9 @@
 <Navbar class={`Navbar navbar-leather navbar-main ${className}`}>
   <div class="flex flex-grow justify-between">
     <NavBrand href="/">
-      <div class="flex flex-col">
+      <div class="flex items-center gap-2">
+        <img src="/medschlr_profile.jpg" alt="MedSchlr Tree Logo" class="h-8 w-8 rounded" />
         <h1 class="text-2xl font-bold">MedSchlr</h1>
-        <!-- <p class="text-xs font-semibold tracking-wide max-sm:max-w-[11rem]">
-             READ THE ORIGINAL. MAKE CONNECTIONS. CULTIVATE KNOWLEDGE.
-             </p> -->
       </div>
     </NavBrand>
   </div>
