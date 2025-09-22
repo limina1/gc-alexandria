@@ -8,8 +8,11 @@ const config = {
   preprocess: [vitePreprocess()],
 
   kit: {
-    // Deno adapter
-    adapter: adapter(),
+    adapter: adapter({
+      out: 'build',
+      precompress: false,
+      envPrefix: '',
+    }),
     alias: {
       $lib: "src/lib",
       $components: "src/lib/components",

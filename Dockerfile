@@ -29,7 +29,8 @@ RUN npm ci --production
 
 # Set environment
 ENV NODE_ENV=production
-ENV ORIGIN=http://localhost:3000
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
 # Expose port
 EXPOSE 3000
