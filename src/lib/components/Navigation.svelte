@@ -11,7 +11,7 @@
   import { userStore } from "$lib/stores/userStore";
 
   let { class: className = "" } = $props();
-  
+
   let userState = $derived($userStore);
 </script>
 
@@ -19,8 +19,10 @@
   <div class="flex flex-grow justify-between">
     <NavBrand href="/">
       <div class="flex flex-col">
-        <h1 class="text-2xl font-bold">Alexandria</h1>
-        <p class="text-xs font-semibold tracking-wide max-sm:max-w-[11rem]">READ THE ORIGINAL. MAKE CONNECTIONS. CULTIVATE KNOWLEDGE.</p>
+        <h1 class="text-2xl font-bold">MedSchlr</h1>
+        <!-- <p class="text-xs font-semibold tracking-wide max-sm:max-w-[11rem]">
+             READ THE ORIGINAL. MAKE CONNECTIONS. CULTIVATE KNOWLEDGE.
+             </p> -->
       </div>
     </NavBrand>
   </div>
