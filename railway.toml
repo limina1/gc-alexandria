@@ -1,6 +1,9 @@
 [build]
 builder = "nixpacks"
 
+[build.nixpacksPlan]
+providers = ["node"]
+
 [deploy]
 startCommand = "node build/index.js"
 restartPolicyType = "on_failure"
@@ -8,3 +11,4 @@ restartPolicyMaxRetries = 10
 
 [variables]
 NODE_ENV = "production"
+NODE_VERSION = "20"
