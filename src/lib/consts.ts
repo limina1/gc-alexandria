@@ -12,7 +12,7 @@ export const communityRelays = [
 
 export const searchRelays = [
   "wss://medschlr.nostr1.com",
-  // "wss://profiles.nostr1.com",
+  "wss://profiles.nostr1.com",
   // "wss://aggr.nostr.land",
   // "wss://relay.noswhere.com",
   // "wss://nostr.wine",
@@ -24,8 +24,8 @@ export const searchRelays = [
 export const secondaryRelays = [
   "wss://medschlr.nostr1.com",
   //"wss://theforest.gitcitadel.eu"
-  // "wss://thecitadel.nostr1.com",
-  //"wss://thecitadel.gitcitadel.eu",
+  "wss://thecitadel.nostr1.com",
+  // "wss://thecitadel.gitcitadel.eu",
   // "wss://nostr.land",
   // "wss://nostr.wine",
   // "wss://nostr.sovbit.host",
@@ -33,14 +33,16 @@ export const secondaryRelays = [
 ];
 
 export const anonymousRelays = [
-  "wss://freelay.sovbit.host",
-  "wss://thecitadel.nostr1.com",
+  "wss://medschlr.nostr1.com",
+  // "wss://freelay.sovbit.host",
+  // "wss://thecitadel.nostr1.com",
 ];
 
 export const lowbandwidthRelays = [
-  "wss://theforest.nostr1.com",
-  "wss://thecitadel.nostr1.com",
-  "wss://aggr.nostr.land",
+  "wss://medschlr.nostr1.com",
+  // "wss://theforest.nostr1.com",
+  // "wss://thecitadel.nostr1.com",
+  // "wss://aggr.nostr.land",
 ];
 
 export const localRelays: string[] = [
