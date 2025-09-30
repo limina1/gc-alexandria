@@ -230,13 +230,8 @@
         <!-- Stakeholder Cards - 2x2 grid on desktop, 2 per row on tablet, single column on mobile -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           <!-- Clinicians Card -->
-          <div 
-            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 focus-within:ring-4 focus-within:ring-blue-200 focus-within:ring-offset-2 transition-all duration-500 cursor-pointer overflow-hidden"
-            role="button"
-            tabindex="0"
-            aria-label="Clinicians: Connect with peers internationally and brainstorm new research"
-            onclick={() => window.location.href = '/stakeholders/clinicians'}
-            onkeydown={(e) => e.key === 'Enter' && (window.location.href = '/stakeholders/clinicians')}
+          <div
+            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
           >
             <!-- Background Gradient -->
             <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -253,26 +248,15 @@
               <h3 class="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-700 transition-colors duration-300">
                 Clinicians
               </h3>
-              <p class="text-gray-700 leading-relaxed mb-6 text-lg">
+              <p class="text-gray-700 leading-relaxed text-lg">
                 Skim concise evidence syntheses and link back to source notes at the point of care.
               </p>
-              <div class="flex items-center text-blue-600 group-hover:text-blue-700 font-semibold">
-                <span>See how it helps</span>
-                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
             </div>
           </div>
-          
+
           <!-- Researchers Card -->
-          <div 
-            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 focus-within:ring-4 focus-within:ring-blue-200 focus-within:ring-offset-2 transition-all duration-500 cursor-pointer overflow-hidden"
-            role="button"
-            tabindex="0"
-            aria-label="Researchers: Publish findings and discover cutting-edge research"
-            onclick={() => window.location.href = '/stakeholders/researchers'}
-            onkeydown={(e) => e.key === 'Enter' && (window.location.href = '/stakeholders/researchers')}
+          <div
+            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
           >
             <!-- Background Gradient -->
             <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -289,26 +273,15 @@
               <h3 class="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-700 transition-colors duration-300">
                 Researchers
               </h3>
-              <p class="text-gray-700 leading-relaxed mb-6 text-lg">
+              <p class="text-gray-700 leading-relaxed text-lg">
                 Share early ideas, get open feedback, and build living evidence syntheses.
               </p>
-              <div class="flex items-center text-blue-600 group-hover:text-blue-700 font-semibold">
-                <span>See how it helps</span>
-                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
             </div>
           </div>
-          
+
           <!-- Students Card -->
-          <div 
-            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 focus-within:ring-4 focus-within:ring-blue-200 focus-within:ring-offset-2 transition-all duration-500 cursor-pointer overflow-hidden"
-            role="button"
-            tabindex="0"
-            aria-label="Students: Learn, collaborate, and gain exposure to scholarly publishing"
-            onclick={() => window.location.href = '/stakeholders/students'}
-            onkeydown={(e) => e.key === 'Enter' && (window.location.href = '/stakeholders/students')}
+          <div
+            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
           >
             <!-- Background Gradient -->
             <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -325,26 +298,15 @@
               <h3 class="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-700 transition-colors duration-300">
                 Students
               </h3>
-              <p class="text-gray-700 leading-relaxed mb-6 text-lg">
+              <p class="text-gray-700 leading-relaxed text-lg">
                 Publish notes and micro-articles; grow a visible, citable learning trail.
               </p>
-              <div class="flex items-center text-blue-600 group-hover:text-blue-700 font-semibold">
-                <span>See how it helps</span>
-                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
             </div>
           </div>
-          
+
           <!-- Public/Health Advocates Card -->
-          <div 
-            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 focus-within:ring-4 focus-within:ring-blue-200 focus-within:ring-offset-2 transition-all duration-500 cursor-pointer overflow-hidden"
-            role="button"
-            tabindex="0"
-            aria-label="Public and Health Advocates: Access research and contribute to public health discussions"
-            onclick={() => window.location.href = '/stakeholders/public'}
-            onkeydown={(e) => e.key === 'Enter' && (window.location.href = '/stakeholders/public')}
+          <div
+            class="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
           >
             <!-- Background Gradient -->
             <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -361,15 +323,9 @@
               <h3 class="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-700 transition-colors duration-300">
                 Public & Health Advocates
               </h3>
-              <p class="text-gray-700 leading-relaxed mb-6 text-lg">
+              <p class="text-gray-700 leading-relaxed text-lg">
                 Read beyond paywalls, follow threads, and fund work you value.
               </p>
-              <div class="flex items-center text-blue-600 group-hover:text-blue-700 font-semibold">
-                <span>See how it helps</span>
-                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
             </div>
           </div>
         </div>

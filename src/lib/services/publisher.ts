@@ -112,6 +112,8 @@ export async function publishZettel(
 /**
  * Publishes a single Nostr event directly
  * @param options - Publishing options for a single event
+ * @param ndk - NDK instance
+ * @param relayUrls - Optional array of specific relay URLs to publish to. If not provided, uses all relays from NDK pool
  * @returns Promise resolving to publish result
  */
 export async function publishSingleEvent(
@@ -122,6 +124,7 @@ export async function publishSingleEvent(
     onError?: (error: string) => void;
   },
   ndk: NDK,
+  relayUrls?: string[],
 ): Promise<PublishResult> {
   const { content, kind, tags, onError } = options;
   if (!ndk?.activeUser) {
@@ -131,7 +134,8 @@ export async function publishSingleEvent(
   }
 
   try {
-    const allRelayUrls = Array.from(ndk.pool?.relays.values() || []).map(
+    // Use provided relay URLs or fall back to all relays in pool
+    const allRelayUrls = relayUrls ?? Array.from(ndk.pool?.relays.values() || []).map(
       (r) => r.url,
     );
     if (allRelayUrls.length === 0) {

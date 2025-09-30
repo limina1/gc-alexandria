@@ -11,6 +11,9 @@
 
   const ndk = getNdkContext();
 
+  // AI-NOTE: Force this page to only use MedSchlr relay for all publishing
+  const MEDSCHLR_RELAY = "wss://medschlr.nostr1.com";
+
   let content = $state("");
   let showPreview = $state(false);
   let isPublishing = $state(false);
@@ -103,6 +106,7 @@
             },
           },
           ndk,
+          [MEDSCHLR_RELAY], // Only publish to MedSchlr relay
         );
         results.push(indexResult);
       }
@@ -123,6 +127,7 @@
             },
           },
           ndk,
+          [MEDSCHLR_RELAY], // Only publish to MedSchlr relay
         );
         results.push(result);
       }
@@ -168,6 +173,7 @@
             },
           },
           ndk,
+          [MEDSCHLR_RELAY], // Only publish to MedSchlr relay
         );
         results.push(result);
       }

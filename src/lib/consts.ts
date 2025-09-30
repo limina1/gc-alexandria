@@ -6,54 +6,54 @@ export const zettelKinds = [30041, 30818, 30023];
 export const repostKinds = [6, 16];
 
 export const communityRelays = [
-  "wss://medschlr.nostr1.com",
-  //"wss://theforest.gitcitadel.eu"
+    "wss://medschlr.nostr1.com",
+    //"wss://theforest.gitcitadel.eu"
 ];
 
 export const searchRelays = [
-  "wss://medschlr.nostr1.com",
-  "wss://profiles.nostr1.com",
-  // "wss://aggr.nostr.land",
-  // "wss://relay.noswhere.com",
-  // "wss://nostr.wine",
-  // "wss://relay.damus.io",
-  // "wss://relay.nostr.band",
-  // "wss://freelay.sovbit.host",
+    "wss://medschlr.nostr1.com",
+    // "wss://profiles.nostr1.com",
+    // "wss://aggr.nostr.land",
+    // "wss://relay.noswhere.com",
+    // "wss://nostr.wine",
+    // "wss://relay.damus.io",
+    // "wss://relay.nostr.band",
+    // "wss://freelay.sovbit.host",
 ];
 
 export const secondaryRelays = [
-  "wss://medschlr.nostr1.com",
-  //"wss://theforest.gitcitadel.eu"
-  "wss://thecitadel.nostr1.com",
-  // "wss://thecitadel.gitcitadel.eu",
-  // "wss://nostr.land",
-  // "wss://nostr.wine",
-  // "wss://nostr.sovbit.host",
-  // "wss://nostr21.com",
+    "wss://medschlr.nostr1.com",
+    //"wss://theforest.gitcitadel.eu"
+    // "wss://thecitadel.nostr1.com",
+    // "wss://thecitadel.gitcitadel.eu",
+    // "wss://nostr.land",
+    // "wss://nostr.wine",
+    // "wss://nostr.sovbit.host",
+    // "wss://nostr21.com",
 ];
 
 export const anonymousRelays = [
-  "wss://medschlr.nostr1.com",
-  // "wss://freelay.sovbit.host",
-  // "wss://thecitadel.nostr1.com",
+    "wss://medschlr.nostr1.com",
+    // "wss://freelay.sovbit.host",
+    // "wss://thecitadel.nostr1.com",
 ];
 
 export const lowbandwidthRelays = [
-  "wss://medschlr.nostr1.com",
-  // "wss://theforest.nostr1.com",
-  // "wss://thecitadel.nostr1.com",
-  // "wss://aggr.nostr.land",
+    "wss://medschlr.nostr1.com",
+    // "wss://theforest.nostr1.com",
+    // "wss://thecitadel.nostr1.com",
+    // "wss://aggr.nostr.land",
 ];
 
 export const localRelays: string[] = [
-  "ws://localhost:8080",
-  "ws://localhost:4869",
-  "ws://localhost:3334",
+    "ws://localhost:8080",
+    "ws://localhost:4869",
+    "ws://localhost:3334",
 ];
 
 export enum FeedType {
-  CommunityRelays = "standard",
-  UserRelays = "user",
+    CommunityRelays = "standard",
+    UserRelays = "user",
 }
 
 export const EXPIRATION_DURATION = 28 * 24 * 60 * 60; // 4 weeks in seconds
