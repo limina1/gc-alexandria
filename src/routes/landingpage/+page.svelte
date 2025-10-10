@@ -1,7 +1,40 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { PageData } from './$types';
 
+  interface Props {
+    data: PageData;
+  }
+
+  interface TutorialVideo {
+    title: string;
+    description: string;
+    youtubeUrl?: string; // Optional YouTube URL - if present, video will be embedded
+  }
+
+  let { data }: Props = $props();
   let featureBlocks: HTMLElement[] = $state(new Array(56));
+
+  // AI-NOTE: Tutorial videos configuration
+  // To add YouTube videos, simply add the URL to the youtubeUrl field
+  // If youtubeUrl is empty or undefined, the clapperboard placeholder will be shown
+  const tutorialVideos: TutorialVideo[] = [
+    {
+      title: 'Getting Started on Nostr',
+      description: 'Learn the basics of Nostr protocol and how to create your decentralized identity.',
+      youtubeUrl: undefined, // Add YouTube URL here when available
+    },
+    {
+      title: 'Setting Up a Nostr Extension',
+      description: 'Step-by-step guide to installing and configuring your browser extension for secure key management.',
+      youtubeUrl: undefined, // Add YouTube URL here when available
+    },
+    {
+      title: 'Writing for MedSchlr',
+      description: 'Discover how to compose, format, and publish scholarly content on the MedSchlr platform.',
+      youtubeUrl: undefined, // Add YouTube URL here when available
+    },
+  ];
 
   function handleIntersection(entries: IntersectionObserverEntry[]): void {
     entries.forEach((entry) => {
@@ -210,6 +243,48 @@
               </p>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Tutorial Placeholders Section -->
+    <section class="py-12 w-full bg-white dark:bg-primary-1000">
+      <div class="max-w-6xl mx-auto px-6 md:px-8">
+        <!-- Tutorial Videos Grid -->
+        <!-- AI-NOTE: Videos are rendered from tutorialVideos array. Add YouTube URLs there to enable video embeds. -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {#each tutorialVideos as video}
+            <div
+              class="group bg-white dark:bg-primary-900 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
+            >
+              {#if video.youtubeUrl}
+                <!-- YouTube embed when URL is provided -->
+                <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden">
+                  <iframe
+                    src={video.youtubeUrl}
+                    title={video.title}
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    class="w-full h-full"
+                  ></iframe>
+                </div>
+              {:else}
+                <!-- Video Placeholder with Clapperboard Icon -->
+                <div class="w-full aspect-video bg-gray-700 dark:bg-gray-800 rounded-lg mb-6 flex items-center justify-center">
+                  <svg class="w-24 h-24 text-gray-500 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+                  </svg>
+                </div>
+              {/if}
+              <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                {video.title}
+              </h3>
+              <p class="text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                {video.description}
+              </p>
+            </div>
+          {/each}
         </div>
       </div>
     </section>
@@ -430,101 +505,70 @@
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {#each [
-            {
-              title: "Novel Approaches to Cardiac Regeneration in Post-MI Patients",
-              authors: "Dr. Sarah Chen, Dr. Michael Rodriguez",
-              tags: ["peer-reviewed", "open data", "relay-synced"],
-              date: "Dec 2024",
-              readTime: "8 min read"
-            },
-            {
-              title: "Machine Learning Applications in Early Cancer Detection",
-              authors: "Dr. James Wilson, Dr. Emily Park",
-              tags: ["peer-reviewed", "AI/ML", "relay-synced"],
-              date: "Dec 2024",
-              readTime: "12 min read"
-            },
-            {
-              title: "The Impact of Social Determinants on Health Outcomes",
-              authors: "Dr. Maria Garcia, Dr. David Thompson",
-              tags: ["public health", "research", "relay-synced"],
-              date: "Nov 2024",
-              readTime: "6 min read"
-            },
-            {
-              title: "Advances in Neuromodulation for Chronic Pain",
-              authors: "Dr. Robert Kim, Dr. Lisa Chen",
-              tags: ["peer-reviewed", "clinical", "relay-synced"],
-              date: "Nov 2024",
-              readTime: "10 min read"
-            },
-            {
-              title: "Digital Health Interventions in Rural Communities",
-              authors: "Dr. Amanda Foster, Dr. Carlos Mendez",
-              tags: ["public health", "digital health", "relay-synced"],
-              date: "Oct 2024",
-              readTime: "7 min read"
-            },
-            {
-              title: "Ethical Considerations in AI-Driven Diagnostics",
-              authors: "Dr. Jennifer Lee, Dr. Thomas Brown",
-              tags: ["AI/ML", "ethics", "relay-synced"],
-              date: "Oct 2024",
-              readTime: "9 min read"
-            }
-          ] as publication, index}
-            <div 
-              class="group bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6 shadow-md hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 transition-all duration-300 cursor-pointer"
-              style="opacity: 0; transform: translateY(30px); transition-delay: {index * 80}ms;"
-              bind:this={featureBlocks[38 + index]}
-              class:animate-in={featureBlocks[38 + index]?.classList.contains('animate-in')}
-              role="button"
-              tabindex="0"
-              onclick={() => window.location.href = `/publications`}
-              onkeydown={(e) => e.key === 'Enter' && (window.location.href = `/publications`)}
-            >
-              <h3 class="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                {publication.title}
-              </h3>
-              <p class="text-sm text-gray-600 mb-4">
-                {publication.authors}
-              </p>
-              <div class="flex flex-wrap gap-2 mb-4">
-                {#each publication.tags as tag}
+          {#if data.publications && data.publications.length > 0}
+            {#each data.publications as publication, index}
+              <a
+                href={publication.dTag ? `/publication/d/${publication.dTag}` : '/publications'}
+                class="group bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6 shadow-md hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 transition-all duration-300 block"
+                style="opacity: 0; transform: translateY(30px); transition-delay: {index * 80}ms;"
+                bind:this={featureBlocks[38 + index]}
+                class:animate-in={featureBlocks[38 + index]?.classList.contains('animate-in')}
+              >
+                <h3 class="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
+                  {publication.title}
+                </h3>
+                {#if publication.summary}
+                  <p class="text-sm text-gray-600 mb-4 line-clamp-3">
+                    {publication.summary}
+                  </p>
+                {/if}
+                <div class="flex flex-wrap gap-2 mb-4">
                   <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
-                    {tag}
+                    kind {publication.kind}
                   </span>
-                {/each}
-              </div>
-              <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
-                <span>{publication.date}</span>
-                <span class="flex items-center gap-1">
-                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                  </svg>
-                  Relay-Synced
-                </span>
-                <span>{publication.readTime}</span>
-              </div>
-              <div class="text-right">
-                <span class="text-blue-600 hover:text-blue-800 font-medium text-sm group-hover:underline transition-colors duration-200">
-                  Read more →
-                </span>
-              </div>
+                  <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200 flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    medschlr
+                  </span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
+                  {#if publication.created_at}
+                    <span>{new Date(publication.created_at * 1000).toLocaleDateString()}</span>
+                  {:else}
+                    <span>Unknown date</span>
+                  {/if}
+                </div>
+                <div class="text-right">
+                  <span class="text-blue-600 hover:text-blue-800 font-medium text-sm group-hover:underline transition-colors duration-200">
+                    Read more →
+                  </span>
+                </div>
+              </a>
+            {/each}
+          {:else}
+            <!-- Empty state when no publications are available -->
+            <div class="col-span-full text-center py-12">
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                No publications available at this time.
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-500">
+                Check back soon for scholarly content from the MedSchlr community.
+              </p>
             </div>
-          {/each}
+          {/if}
         </div>
 
         <!-- Footer CTA -->
-        <div 
+        <div
           class="text-center"
           style="opacity: 0; transform: translateY(20px);"
           bind:this={featureBlocks[43]}
           class:animate-in={featureBlocks[43]?.classList.contains('animate-in')}
         >
-          <a 
-            href="/publications" 
+          <a
+            href="/"
             class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 hover:shadow-lg hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
           >
             View All Publications
@@ -534,11 +578,11 @@
     </section>
 
       <!-- Communities Section -->
-      <section id="communities" class="py-6 w-full bg-white dark:bg-primary-1000">
+      <section id="communities" class="pt-6 pb-2 w-full bg-white dark:bg-primary-1000">
         <div class="max-w-6xl mx-auto px-6 md:px-8">
           <!-- Garden Metaphor -->
           <div class="text-center mb-2">
-            <p 
+            <p
               class="text-lg text-gray-500 italic max-w-2xl mx-auto leading-relaxed opacity-0 translate-y-8"
               bind:this={featureBlocks[44]}
               class:animate-in={featureBlocks[44]?.classList.contains('animate-in')}
@@ -546,7 +590,44 @@
               A garden for ideas—where diverse perspectives can take root and grow.
             </p>
           </div>
-          
+
+          <!-- Tutorial Videos Grid -->
+          <!-- AI-NOTE: Videos are rendered from tutorialVideos array. Both sections use the same array. -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
+            {#each tutorialVideos as video}
+              <div
+                class="group bg-white dark:bg-primary-900 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
+              >
+                {#if video.youtubeUrl}
+                  <!-- YouTube embed when URL is provided -->
+                  <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden">
+                    <iframe
+                      src={video.youtubeUrl}
+                      title={video.title}
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen
+                      class="w-full h-full"
+                    ></iframe>
+                  </div>
+                {:else}
+                  <!-- Video Placeholder with Clapperboard Icon -->
+                  <div class="w-full aspect-video bg-gray-700 dark:bg-gray-800 rounded-lg mb-6 flex items-center justify-center">
+                    <svg class="w-24 h-24 text-gray-500 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+                    </svg>
+                  </div>
+                {/if}
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                  {video.title}
+                </h3>
+                <p class="text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {video.description}
+                </p>
+              </div>
+            {/each}
+          </div>
+
           <!-- Section Header -->
           <div class="text-center mb-6">
             <h2 
@@ -568,66 +649,42 @@
           <!-- Communities Grid -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Basic Research -->
-            <div 
+            <div
               class="opacity-0 translate-y-8"
               bind:this={featureBlocks[47]}
               class:animate-in={featureBlocks[47]?.classList.contains('animate-in')}
             >
               <h3 class="text-2xl font-bold text-gray-900 mb-4">Basic Research</h3>
               <div class="flex flex-wrap gap-3">
-                <a 
-                  href="/communities/lab-methods"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Lab Methods community"
-                >
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Lab Methods
-                </a>
-                <a 
-                  href="/communities/genetics"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Genetics community"
-                >
+                </span>
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Genetics
-                </a>
-                <a 
-                  href="/communities/animal-studies"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Animal Studies community"
-                >
+                </span>
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Animal Studies
-                </a>
+                </span>
               </div>
             </div>
 
             <!-- Clinical Research -->
-            <div 
+            <div
               class="opacity-0 translate-y-8"
-              bind:this={featureBlocks[47]}
-              class:animate-in={featureBlocks[47]?.classList.contains('animate-in')}
+              bind:this={featureBlocks[48]}
+              class:animate-in={featureBlocks[48]?.classList.contains('animate-in')}
             >
               <h3 class="text-2xl font-bold text-gray-900 mb-4">Clinical Research</h3>
               <div class="flex flex-wrap gap-3">
-                <a 
-                  href="/communities/guideline-development"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Guideline Development community"
-                >
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Guideline Development
-                </a>
-                <a 
-                  href="/communities/systematic-reviews"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Systematic Reviews community"
-                >
+                </span>
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Systematic Reviews
-                </a>
-                <a 
-                  href="/communities/patient-outcomes"
-                  class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-                  aria-label="Join Patient Outcomes community"
-                >
+                </span>
+                <span class="px-6 py-3 bg-blue-600 text-white font-medium rounded-full">
                   Patient Outcomes
-                </a>
+                </span>
               </div>
             </div>
           </div>
@@ -710,13 +767,6 @@
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-gray-900 mb-1">Connect to MedSchlr</h3>
                     <p class="text-gray-600 text-sm mb-2">Connection is automatic—no technical setup required.</p>
-                  <a 
-                    href="/settings/relays" 
-                                          class="text-blue-600 hover:text-blue-800 text-xs underline transition-colors duration-200"
-                    aria-label="View advanced relay settings"
-                  >
-                    Advanced settings
-                  </a>
                 </div>
               </div>
             </div>
