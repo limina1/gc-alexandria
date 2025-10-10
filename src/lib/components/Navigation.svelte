@@ -17,7 +17,7 @@
 
 <Navbar class={`Navbar navbar-leather navbar-main ${className}`}>
   <div class="flex flex-grow justify-between">
-    <NavBrand href="/">
+    <NavBrand href="/feed">
       <div class="flex items-center gap-2">
         <img src="/medschlr_profile.jpg" alt="MedSchlr Tree Logo" class="h-8 w-8 rounded" />
         <h1 class="text-2xl font-bold">MedSchlr</h1>
@@ -29,7 +29,7 @@
     <NavHamburger class="btn-leather" />
   </div>
   <NavUl class="ul-leather">
-    <NavLi href="/">Publications</NavLi>
+    <NavLi href="/feed">Publications</NavLi>
     <NavLi href="/new/compose">Compose</NavLi>
     <NavLi href="/visualize">Visualize</NavLi>
     <NavLi href="/start">Getting Started</NavLi>
