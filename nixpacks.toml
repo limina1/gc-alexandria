@@ -2,9 +2,6 @@
 NODE_ENV = "production"
 HOST = "0.0.0.0"
 
-[phases.setup]
-nixPkgs = ["nodejs-20_x"]
-
 [phases.build]
 cmds = [
   "npm ci --production=false",
