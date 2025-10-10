@@ -2,6 +2,9 @@ import type { PageLoad } from './$types';
 import NDK, { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
 import { indexKind } from '$lib/consts';
 
+// Disable SSR for this page to avoid WebSocket connection hangs
+export const ssr = false;
+
 /**
  * Fetches featured 30040 (index) events from the medschlr relay
  * Showcases the Community Charter as the first article, followed by 5 recent publications
