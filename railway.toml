@@ -5,10 +5,11 @@ builder = "nixpacks"
 providers = ["node"]
 
 [deploy]
-startCommand = "node build/index.js"
+startCommand = "node build"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 [variables]
 NODE_ENV = "production"
 NODE_VERSION = "20"
+HOST = "0.0.0.0"
