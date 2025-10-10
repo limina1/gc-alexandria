@@ -1,11 +1,9 @@
-[providers]
-node = "20"
-
 [variables]
 NODE_ENV = "production"
+HOST = "0.0.0.0"
 
 [phases.setup]
-nixPkgs = ["nodejs-20_x", "npm-9_x"]
+nixPkgs = ["nodejs-20_x"]
 
 [phases.build]
 cmds = [
@@ -14,4 +12,4 @@ cmds = [
 ]
 
 [phases.start]
-cmd = "node build/index.js"
+cmd = "node build"
