@@ -4,6 +4,7 @@
   import { onMount, setContext } from "svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import { browser } from "$app/environment";
   import { cleanupNdk, getPersistedLogin } from "$lib/ndk";
   import { userStore, loginMethodStorageKey } from "$lib/stores/userStore";
   import type { LayoutProps } from "./$types";
@@ -11,7 +12,10 @@
   // Define children prop for Svelte 5
   let { data, children }: LayoutProps = $props();
 
-  setContext("ndk", data.ndk);
+  // Only set NDK context in browser (data.ndk is null on server)
+  if (browser && data.ndk) {
+    setContext("ndk", data.ndk);
+  }
 
   // Get standard metadata for OpenGraph tags
   // let title = "Library of Alexandria";
