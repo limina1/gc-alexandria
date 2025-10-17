@@ -9,30 +9,31 @@
   interface TutorialVideo {
     title: string;
     description: string;
-    youtubeUrl?: string; // Optional YouTube URL - if present, video will be embedded
+    videoUrl?: string; // Optional video URL - if present, video will be embedded
   }
 
   let { data }: Props = $props();
   let featureBlocks: HTMLElement[] = $state(new Array(56));
 
   // AI-NOTE: Tutorial videos configuration
-  // To add YouTube videos, simply add the URL to the youtubeUrl field
-  // If youtubeUrl is empty or undefined, the clapperboard placeholder will be shown
+  // To add videos, simply add the URL to the videoUrl field
+  // Supports direct video URLs (MP4, WebM, etc.) from any source including Nostr Build
+  // If videoUrl is empty or undefined, the clapperboard placeholder will be shown
   const tutorialVideos: TutorialVideo[] = [
     {
       title: 'Getting Started on Nostr',
       description: 'Learn the basics of Nostr protocol and how to create your decentralized identity.',
-      youtubeUrl: undefined, // Add YouTube URL here when available
+      videoUrl: 'https://v.nostr.build/ZXe8Lkaf4Qm0SEIj.mp4',
     },
     {
       title: 'Setting Up a Nostr Extension',
       description: 'Step-by-step guide to installing and configuring your browser extension for secure key management.',
-      youtubeUrl: undefined, // Add YouTube URL here when available
+      videoUrl: 'https://v.nostr.build/rPAU8tLzV9V6CBGp.mp4',
     },
     {
       title: 'Writing for MedSchlr',
       description: 'Discover how to compose, format, and publish scholarly content on the MedSchlr platform.',
-      youtubeUrl: undefined, // Add YouTube URL here when available
+      videoUrl: undefined, // Add video URL here when available
     },
   ];
 
@@ -251,23 +252,25 @@
     <section class="py-12 w-full bg-white dark:bg-primary-1000">
       <div class="max-w-6xl mx-auto px-6 md:px-8">
         <!-- Tutorial Videos Grid -->
-        <!-- AI-NOTE: Videos are rendered from tutorialVideos array. Add YouTube URLs there to enable video embeds. -->
+        <!-- AI-NOTE: Videos are rendered from tutorialVideos array. Add video URLs there to enable video embeds. -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           {#each tutorialVideos as video}
             <div
               class="group bg-white dark:bg-primary-900 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
             >
-              {#if video.youtubeUrl}
-                <!-- YouTube embed when URL is provided -->
-                <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden">
-                  <iframe
-                    src={video.youtubeUrl}
+              {#if video.videoUrl}
+                <!-- Video player when URL is provided -->
+                <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden bg-black">
+                  <video
+                    src={video.videoUrl}
                     title={video.title}
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
+                    controls
+                    preload="metadata"
                     class="w-full h-full"
-                  ></iframe>
+                  >
+                    <track kind="captions" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               {:else}
                 <!-- Video Placeholder with Clapperboard Icon -->
@@ -598,17 +601,19 @@
               <div
                 class="group bg-white dark:bg-primary-900 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
               >
-                {#if video.youtubeUrl}
-                  <!-- YouTube embed when URL is provided -->
-                  <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden">
-                    <iframe
-                      src={video.youtubeUrl}
+                {#if video.videoUrl}
+                  <!-- Video player when URL is provided -->
+                  <div class="w-full aspect-video rounded-lg mb-6 overflow-hidden bg-black">
+                    <video
+                      src={video.videoUrl}
                       title={video.title}
-                      frameborder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowfullscreen
+                      controls
+                      preload="metadata"
                       class="w-full h-full"
-                    ></iframe>
+                    >
+                      <track kind="captions" />
+                      Your browser does not support the video tag.
+                    </video>
                   </div>
                 {:else}
                   <!-- Video Placeholder with Clapperboard Icon -->
