@@ -24,13 +24,13 @@
       title: "Getting Started on Nostr",
       description:
         "Learn the basics of Nostr protocol and how to create your decentralized identity.",
-      videoUrl: "https://v.nostr.build/ZXe8Lkaf4Qm0SEIj.mp4",
+      videoUrl: "https://v.nostr.build/rPAU8tLzV9V6CBGp.mp4",
     },
     {
       title: "Setting Up a Nostr Extension",
       description:
         "Step-by-step guide to installing and configuring your browser extension for secure key management.",
-      videoUrl: "https://v.nostr.build/rPAU8tLzV9V6CBGp.mp4",
+      videoUrl: "https://v.nostr.build/ZXe8Lkaf4Qm0SEIj.mp4",
     },
     {
       title: "Writing for MedSchlr",
