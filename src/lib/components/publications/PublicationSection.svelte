@@ -13,6 +13,7 @@
   import { postProcessAdvancedAsciidoctorHtml } from "$lib/utils/markup/advancedAsciidoctorPostProcessor";
   import { parseAdvancedmarkup } from "$lib/utils/markup/advancedMarkupParser";
   import NDK from "@nostr-dev-kit/ndk";
+  import HighlightOverlay from "./HighlightOverlay.svelte";
 
   let {
     address,
@@ -133,6 +134,7 @@
   });
 
   let sectionRef: HTMLElement;
+  let contentRef: HTMLElement | null = $state(null);
 
   $effect(() => {
     if (!sectionRef) {
@@ -140,13 +142,16 @@
     }
 
     ref(sectionRef);
+
+    // Set contentRef for highlight overlay
+    contentRef = sectionRef;
   });
 </script>
 
 <section
   id={address}
   bind:this={sectionRef}
-  class="publication-leather content-visibility-auto"
+  class="publication-leather content-visibility-auto relative"
 >
   {#await Promise.all( [leafTitle, leafContent, leafHierarchy, publicationType, divergingBranches], )}
     <TextPlaceholder size="xxl" />
@@ -166,5 +171,12 @@
       publicationType ?? "article",
       false,
     )}
+
+    <!-- Highlight Overlay -->
+    <HighlightOverlay
+      publicationAddress={address}
+      contentElement={contentRef}
+      enabled={true}
+    />
   {/await}
 </section>
