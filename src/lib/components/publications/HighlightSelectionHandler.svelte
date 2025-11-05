@@ -63,7 +63,7 @@
   }
 
   async function createHighlight() {
-    if (!$userStore.signer || !ndk) {
+    if (!$userStore.signedIn || !ndk || !ndk.activeUser) {
       showFeedbackMessage("Please sign in to create highlights", "error");
       return;
     }
@@ -74,6 +74,7 @@
       const event = new NDKEvent(ndk);
       event.kind = 9802;
       event.content = selectedText;
+      event.pubkey = ndk.activeUser.pubkey;
 
       // Determine if we're highlighting an addressable event or regular event
       const eventAddress = publicationEvent.tagAddress();
@@ -104,16 +105,19 @@
 
       event.tags = tags;
 
-      // Sign and publish the event
-      await event.sign($userStore.signer);
+      // Sign the event using NDK's signer
+      await event.sign();
 
-      // Get outbox relays for publishing
-      const relays = $activeOutboxRelays;
-      if (relays.length > 0) {
-        await event.publish();
-      } else {
-        // Fallback to default NDK publish
-        await event.publish();
+      console.log("[HighlightSelection] Signed highlight event:", event.rawEvent());
+      console.log("[HighlightSelection] Event pubkey:", event.pubkey);
+
+      // Publish to relays
+      const publishedRelays = await event.publish();
+
+      console.log("[HighlightSelection] Published to relays:", publishedRelays);
+
+      if (publishedRelays.size === 0) {
+        throw new Error("Failed to publish to any relays");
       }
 
       showFeedbackMessage("Highlight created successfully!", "success");

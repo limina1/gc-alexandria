@@ -22,7 +22,6 @@
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
   let success = $state(false);
-  let sectionHovered = $state(false);
 
   // Parse address to get event details
   function parseAddress(address: string): { kind: number; pubkey: string; dTag: string } | null {
@@ -76,6 +75,7 @@
     const commentEvent = new NDKEvent(ndk);
     commentEvent.kind = 1111;
     commentEvent.content = content;
+    commentEvent.pubkey = ndk.activeUser!.pubkey;
 
     // NIP-22 tags structure for top-level comments
     commentEvent.tags = [
@@ -111,7 +111,7 @@
       return;
     }
 
-    if (!$userStore.signedIn || !$userStore.signer) {
+    if (!$userStore.signedIn || !ndk.activeUser) {
       error = "You must be signed in to comment";
       return;
     }
@@ -126,10 +126,11 @@
         throw new Error("Failed to create comment event");
       }
 
-      // Sign the event
-      await commentEvent.sign($userStore.signer);
+      // Sign the event using NDK's signer
+      await commentEvent.sign();
 
       console.log("[CommentButton] Signed comment event:", commentEvent.rawEvent());
+      console.log("[CommentButton] Event pubkey:", commentEvent.pubkey);
 
       // Publish to relays
       const publishedRelays = await commentEvent.publish();
@@ -188,10 +189,10 @@
 </script>
 
 <!-- Hamburger Comment Button -->
-<div class="comment-button-container" onmouseenter={() => sectionHovered = true} onmouseleave={() => sectionHovered = false}>
+<div class="comment-button-container">
   <button
     class="hamburger-button"
-    class:visible={sectionHovered || showCommentUI}
+    class:active={showCommentUI}
     onclick={toggleCommentUI}
     title="Add comment"
     aria-label="Add comment"
@@ -276,7 +277,13 @@
     z-index: 10;
   }
 
-  .hamburger-button.visible {
+  /* Show button when parent section is hovered */
+  :global(.publication-leather:hover) .hamburger-button {
+    opacity: 1;
+  }
+
+  /* Keep visible when comment UI is open */
+  .hamburger-button.active {
     opacity: 1;
   }
 
