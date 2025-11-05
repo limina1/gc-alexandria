@@ -188,17 +188,15 @@
   }
 </script>
 
-<!-- Hamburger Comment Button -->
+<!-- Comment Button -->
 <div class="comment-button-container">
   <button
-    class="hamburger-button"
+    class="comment-button"
     class:active={showCommentUI}
     onclick={toggleCommentUI}
     title="Add comment"
     aria-label="Add comment"
   >
-    <span class="line"></span>
-    <span class="line"></span>
     <span class="line"></span>
   </button>
 
@@ -259,16 +257,16 @@
     position: relative;
   }
 
-  .hamburger-button {
+  .comment-button {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 8px;
+    right: 8px;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 28px;
-    height: 20px;
-    padding: 4px;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 24px;
+    padding: 0;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -278,31 +276,39 @@
   }
 
   /* Show button when parent section is hovered */
-  :global(.publication-leather:hover) .hamburger-button {
+  :global(.publication-leather:hover) .comment-button {
     opacity: 1;
   }
 
   /* Keep visible when comment UI is open */
-  .hamburger-button.active {
+  .comment-button.active {
     opacity: 1;
   }
 
-  .hamburger-button:hover .line {
-    border-width: 2px;
-    margin: 1px 0;
+  .comment-button:hover .line {
+    border-width: 3px;
   }
 
   .line {
     width: 100%;
-    border-top: 1px dashed #6b7280;
+    height: 0;
+    border-top: 2px dashed #6b7280;
     transition: all 0.2s ease-in-out;
-    margin: 2px 0;
+  }
+
+  /* Dark mode */
+  :global(.dark) .line {
+    border-color: #9ca3af;
+  }
+
+  :global(.dark) .comment-button:hover .line {
+    border-color: #d1d5db;
   }
 
   .comment-ui {
     position: absolute;
-    top: 30px;
-    left: 0;
+    top: 35px;
+    right: 0;
     min-width: 400px;
     max-width: 600px;
     background: white;
