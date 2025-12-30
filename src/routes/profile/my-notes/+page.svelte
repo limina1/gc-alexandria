@@ -8,9 +8,19 @@
   import { getTitleTagForEvent } from "$lib/utils/event_input_utils.ts";
   import asciidoctor from "asciidoctor";
   import { postProcessAsciidoctorHtml } from "$lib/utils/markup/asciidoctorPostProcessor.ts";
-  import { getNdkContext } from "$lib/ndk.ts";
-  
+  import { getNdkContext, activeInboxRelays } from "$lib/ndk.ts";
+  import { relaySwitchCounter, activeRelaySet } from "$lib/stores/relaySetStore";
+  import { NDKRelaySet } from "@nostr-dev-kit/ndk";
+
   const ndk = getNdkContext();
+
+  // Track relay switches and active set changes to re-fetch when needed
+  let lastProcessedSwitchCount = $state(-1);
+  let lastRelaySetId = $state<string | null>(null);
+
+  // Relay info for display
+  let relaySetName = $derived($activeRelaySet?.title ?? "Default Relays");
+  let relayCount = $derived($activeRelaySet?.relays?.length ?? 0);
 
   let events: NDKEvent[] = $state([]);
   let loading = $state(true);
@@ -49,11 +59,42 @@
         loading = false;
         return;
       }
-      const eventSet = await ndk.fetchEvents({
-        kinds: [30041],
-        authors: [user.pubkey],
-        limit: 1000,
+
+      // Use active relay set directly, fall back to activeInboxRelays
+      const currentSet = get(activeRelaySet);
+      const relays = currentSet?.relays ?? get(activeInboxRelays);
+      console.log("[MyNotes] Active relay set:", currentSet?.title ?? "none");
+      console.log("[MyNotes] Fetching from relays:", relays);
+
+      const relayUrls = relays.map((r) => {
+        if (!r.startsWith("ws://") && !r.startsWith("wss://")) {
+          const isLocal = r.includes("localhost") || r.includes("127.0.0.1");
+          return isLocal ? `ws://${r}` : `wss://${r}`;
+        }
+        return r;
       });
+
+      console.log("[MyNotes] Normalized relay URLs:", relayUrls);
+
+      const relaySet =
+        relayUrls.length > 0
+          ? NDKRelaySet.fromRelayUrls(relayUrls, ndk)
+          : undefined;
+
+      console.log("[MyNotes] RelaySet created:", relaySet ? "yes" : "no (using default pool)");
+
+      const eventSet = await ndk.fetchEvents(
+        {
+          kinds: [30041],
+          authors: [user.pubkey],
+          limit: 1000,
+        },
+        { closeOnEose: true },
+        relaySet,
+      );
+
+      console.log("[MyNotes] Fetched events count:", eventSet.size);
+
       events = Array.from(eventSet)
         .filter((e): e is NDKEvent => !!e && typeof e.created_at === "number")
         .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
@@ -211,9 +252,39 @@
   });
 
   // AI-NOTE: Only fetch notes after authentication is confirmed
+  // Also re-fetch when relay set changes
   $effect(() => {
+    const switchCount = $relaySwitchCounter;
+    const currentSet = $activeRelaySet;
+    const currentSetId = currentSet?.id ?? null;
+
     if (!checkingAuth && $userStore.signedIn) {
-      fetchMyNotes();
+      // Check if relay set changed or this is a new switch
+      const setChanged = currentSetId !== lastRelaySetId;
+      const switchDetected = switchCount !== lastProcessedSwitchCount;
+
+      if (setChanged || switchDetected) {
+        console.log("[MyNotes] Relay change detected:", {
+          setChanged,
+          switchDetected,
+          currentSet: currentSet?.title ?? "none",
+          switchCount,
+        });
+
+        lastRelaySetId = currentSetId;
+        lastProcessedSwitchCount = switchCount;
+
+        // Add delay for relay switches to allow connections to establish
+        if (switchCount > 0 && switchDetected) {
+          loading = true;
+          setTimeout(() => {
+            console.log("[MyNotes] Fetching after relay switch delay");
+            fetchMyNotes();
+          }, 1500);
+        } else {
+          fetchMyNotes();
+        }
+      }
     }
   });
 </script>
@@ -275,7 +346,12 @@
 
   <!-- Notes Feed -->
   <div class="flex-1 w-full lg:max-w-5xl lg:ml-auto px-0 lg:px-4 min-w-0 overflow-hidden">
-    <h1 class="text-2xl font-bold mb-6">My Notes</h1>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+      <h1 class="text-2xl font-bold">My Notes</h1>
+      <span class="text-sm text-gray-500 dark:text-gray-400">
+        Pulling from: <span class="font-medium text-gray-700 dark:text-gray-300">{relaySetName}</span> | {relayCount} relays
+      </span>
+    </div>
     {#if checkingAuth}
       <div class="text-gray-500">Checking authentication...</div>
     {:else if loading}
