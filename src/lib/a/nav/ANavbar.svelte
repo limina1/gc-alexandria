@@ -63,6 +63,7 @@
     Heading
   } from "flowbite-svelte";
   import Profile from "$components/util/Profile.svelte";
+  import RelaySetSelector from "$components/relay_sets/RelaySetSelector.svelte";
 
   import { ChevronDownOutline } from "flowbite-svelte-icons";
 
@@ -120,7 +121,8 @@
       </P>
     </div>
   </NavBrand>
-  <div class="flex md:order-2">
+<div class="flex md:order-2 gap-2">
+    <RelaySetSelector />
     <NavHamburger />
   </div>
   <NavUl class="order-1 ml-auto items-center" classes={{ ul: "items-center" }}>

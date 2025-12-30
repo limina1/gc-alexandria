@@ -21,12 +21,13 @@
     parseAsciiDocWithTree,
     exportEventsFromTree,
   } from "$lib/utils/asciidoc_publication_parser";
-  import { getNdkContext } from "$lib/ndk";
+import { getNdkContext, activeInboxRelays } from "$lib/ndk";
   import Asciidoctor, { Document } from "asciidoctor";
   import {
     extractWikiLinks,
     renderWikiLinksToHtml,
   } from "$lib/utils/wiki_links";
+  import { activeRelaySet, relaySetStore } from "$lib/stores/relaySetStore";
 
   // Initialize Asciidoctor processor
   const asciidoctor = Asciidoctor();
@@ -68,8 +69,14 @@
   let generatedEvents = $state<any>(null);
   let contentType = $state<"article" | "scattered-notes" | "none">("none");
 
-  // Dark mode state
+// Dark mode state
   let isDarkMode = $state(false);
+
+  // Relay info for publishing indicator - use activeInboxRelays which reflects actual enabled relays
+  let currentRelaySet = $derived($activeRelaySet);
+  let activeRelays = $derived($activeInboxRelays);
+  let relayCount = $derived(activeRelays.length);
+  let relaySetName = $derived(currentRelaySet?.title || "Default Relays");
 
   // Note: updateEditorContent() is only called manually when needed
   // The automatic effect was causing feedback loops with user typing
@@ -962,6 +969,16 @@
               >
             </div>
           {/if}
+
+          <div class="text-xs text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Publishing to:</span>
+            <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200">
+              {relaySetName}
+            </span>
+            <span class="ml-1 text-gray-500 dark:text-gray-400">
+              | {relayCount} relay{relayCount !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
       </div>
 

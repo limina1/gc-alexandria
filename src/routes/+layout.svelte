@@ -4,6 +4,7 @@
   import { goto } from "$app/navigation";
   import { cleanupNdk, getPersistedLogin } from "$lib/ndk";
   import { loginMethodStorageKey, userStore } from "$lib/stores/userStore";
+  import { initializeRelaySetStore } from "$lib/stores/relaySetStore";
   import type { LayoutProps } from "./$types";
   import { page } from "$app/state";
   import { AFooter, ANavbar } from "$lib/a/index.js";
@@ -13,7 +14,10 @@
 
   setContext("ndk", data.ndk);
 
-  let contentTop = $state(100); // Default to 100px
+let contentTop = $state(100); // Default to 100px
+
+  // Initialize relay set store to auto-fetch on user login
+  initializeRelaySetStore(data.ndk);
 
   // Get standard metadata for OpenGraph tags
   let title = "Library of Alexandria";

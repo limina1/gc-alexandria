@@ -41,7 +41,7 @@
       (e.target as HTMLImageElement).src = "/favicon.png";
     }}
   />
-  <span class="font-mono text-xs flex-1">{relay}</span>
+  <span class="font-mono text-xs flex-1 text-gray-900 dark:text-gray-200">{relay}</span>
   {#if showStatus && status}
     {#if status === "pending"}
       <svg

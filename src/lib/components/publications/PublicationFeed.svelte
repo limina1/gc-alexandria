@@ -16,6 +16,7 @@
   import { isValidNip05Address } from "$lib/utils/search_utility";
   import { userStore } from "$lib/stores/userStore.ts";
   import { nip19 } from "nostr-tools";
+  import { relaySwitchCounter } from "$lib/stores/relaySetStore";
 
   const props = $props<{
     searchQuery?: string;
@@ -561,6 +562,31 @@
     const searchQuery = props.searchQuery;
     const showOnlyMyPublications = props.showOnlyMyPublications;
     debouncedSearch(searchQuery);
+  });
+
+  // Track the last processed relay switch to prevent infinite loops
+  let lastProcessedSwitchCount = $state(0);
+
+  // AI-NOTE: Watch for explicit relay set switches via the relaySwitchCounter
+  // This ensures a complete refresh when the user switches relay sets from the dropdown
+  $effect(() => {
+    const switchCount = $relaySwitchCounter;
+    // Only process if this is a new switch we haven't handled yet
+    if (switchCount > lastProcessedSwitchCount) {
+      lastProcessedSwitchCount = switchCount;
+      console.log('[PublicationFeed] Relay set switched, forcing complete refresh');
+      // Clear all caches and state
+      indexEventCache.clear();
+      searchCache.clear();
+      allRelays = [];
+      allIndexEvents = [];
+      eventsInView = [];
+      loading = true;
+      // Trigger re-initialization after a short delay to allow relay pool to stabilize
+      setTimeout(() => {
+        initializeAndFetch();
+      }, 500);
+    }
   });
 
   // Emit event count updates

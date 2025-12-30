@@ -15,6 +15,8 @@ export const NIP51_LIST_KINDS = {
   MUTED: 10000, // Mute list
   PINNED: 10001, // Pin list
   RELAYS: 10002, // Relay list
+  FAVORITE_RELAYS: 10012, // Favorite relays with relay set references
+  RELAY_SETS: 30002, // Relay sets
   PEOPLE: 30000, // Categorized people list
   BOOKMARKS: 30001, // Categorized bookmark list
   COMMUNITIES: 34550, // Community definition
