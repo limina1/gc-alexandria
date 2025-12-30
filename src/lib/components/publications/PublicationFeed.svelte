@@ -205,11 +205,18 @@
 
     // Helper to fetch from a single relay with timeout
     async function fetchFromRelay(relay: string): Promise<void> {
+      // Normalize relay URL to ensure wss:// prefix
+      let normalizedRelay = relay;
+      if (!relay.startsWith('ws://') && !relay.startsWith('wss://')) {
+        const isLocal = relay.includes('localhost') || relay.includes('127.0.0.1');
+        normalizedRelay = isLocal ? `ws://${relay}` : `wss://${relay}`;
+      }
+
       try {
-        console.debug(`[PublicationFeed] Fetching from relay: ${relay}`);
-        
+        console.debug(`[PublicationFeed] Fetching from relay: ${normalizedRelay}`);
+
         // Use WebSocketPool to get a pooled connection
-        const ws = await WebSocketPool.instance.acquire(relay);
+        const ws = await WebSocketPool.instance.acquire(normalizedRelay);
         const subId = crypto.randomUUID();
         
         // Create a promise that resolves with the events
@@ -245,13 +252,13 @@
             { kinds: [indexKind], limit: 1000 }
           ]));
           
-          // Set up cleanup
+          // Set up cleanup - 10 second timeout to allow slower relays to respond
           setTimeout(() => {
             ws.removeEventListener("message", messageHandler);
             ws.removeEventListener("error", errorHandler);
             WebSocketPool.instance.release(ws);
             resolve(events);
-          }, 5000);
+          }, 10000);
         });
         
         let eventSet = await eventPromise;
@@ -260,7 +267,7 @@
         eventSet = filterValidIndexEvents(eventSet);
         console.debug(`[PublicationFeed] Valid events from ${relay}:`, eventSet.size);
         
-        relayStatuses = { ...relayStatuses, [relay]: "found" };
+        relayStatuses = { ...relayStatuses, [normalizedRelay]: "found" };
         
         // Add new events to the map and update the view immediately
         const newEvents: NDKEvent[] = [];
@@ -285,8 +292,8 @@
           console.debug(`[PublicationFeed] Updated view with ${newEvents.length} new events from ${relay}, total: ${allIndexEvents.length}`);
         }
       } catch (err) {
-        console.error(`[PublicationFeed] Error fetching from relay ${relay}:`, err);
-        relayStatuses = { ...relayStatuses, [relay]: "notfound" };
+        console.error(`[PublicationFeed] Error fetching from relay ${normalizedRelay}:`, err);
+        relayStatuses = { ...relayStatuses, [normalizedRelay]: "notfound" };
       }
     }
 
@@ -406,7 +413,7 @@
 
   // Function to filter events based on search query
   const filterEventsBySearch = (events: NDKEvent[]) => {
-    if (!props.searchQuery) return events;
+    if (!props.searchQuery?.trim()) return events;
     const query = props.searchQuery.trim();
     console.debug(
       "[PublicationFeed] Filtering events with query:",
@@ -578,14 +585,23 @@
       // Clear all caches and state
       indexEventCache.clear();
       searchCache.clear();
+      // Drain WebSocket pool to ensure fresh connections to new relays
+      WebSocketPool.instance.drain();
       allRelays = [];
       allIndexEvents = [];
       eventsInView = [];
       loading = true;
-      // Trigger re-initialization after a short delay to allow relay pool to stabilize
+      // Trigger re-initialization after delay to allow relay connections to establish
       setTimeout(() => {
+        const relays = $activeInboxRelays;
+        console.log('[PublicationFeed] Starting fetch after relay switch');
+        console.log('[PublicationFeed] Active inbox relays:', relays);
+        console.log('[PublicationFeed] Relay count:', relays.length);
+        if (relays.length === 0) {
+          console.warn('[PublicationFeed] No relays available after switch!');
+        }
         initializeAndFetch();
-      }, 500);
+      }, 1500);
     }
   });
 
@@ -603,17 +619,22 @@
     loadingMore = true;
     const current = eventsInView.length;
     let source = allIndexEvents;
-    
+
+    console.debug('[PublicationFeed] loadMorePublications: allIndexEvents count:', allIndexEvents.length);
+
     // Apply user filter first
     source = filterEventsByUser(source);
-    
+    console.debug('[PublicationFeed] loadMorePublications: after user filter:', source.length);
+
     // Then apply search filter if query exists
-    if (props.searchQuery.trim()) {
+    if (props.searchQuery?.trim()) {
       source = filterEventsBySearch(source);
+      console.debug('[PublicationFeed] loadMorePublications: after search filter:', source.length);
     }
-    
+
     eventsInView = source.slice(0, current + publicationsToDisplay);
     endOfFeed = eventsInView.length >= source.length;
+    console.debug('[PublicationFeed] loadMorePublications: eventsInView:', eventsInView.length, 'endOfFeed:', endOfFeed);
     loadingMore = false;
   }
 
