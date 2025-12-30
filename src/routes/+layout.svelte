@@ -14,7 +14,7 @@
 
   setContext("ndk", data.ndk);
 
-let contentTop = $state(100); // Default to 100px
+  let contentTop = $state(100); // Default to 100px
 
   // Initialize relay set store to auto-fetch on user login
   initializeRelaySetStore(data.ndk);

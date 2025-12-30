@@ -21,8 +21,8 @@
     parseAsciiDocWithTree,
     exportEventsFromTree,
   } from "$lib/utils/asciidoc_publication_parser";
-import { getNdkContext, activeInboxRelays } from "$lib/ndk";
-  import Asciidoctor, { Document } from "asciidoctor";
+  import { getNdkContext, activeInboxRelays } from "$lib/ndk";
+  import Asciidoctor from "asciidoctor";
   import {
     extractWikiLinks,
     renderWikiLinksToHtml,
@@ -69,7 +69,7 @@ import { getNdkContext, activeInboxRelays } from "$lib/ndk";
   let generatedEvents = $state<any>(null);
   let contentType = $state<"article" | "scattered-notes" | "none">("none");
 
-// Dark mode state
+  // Dark mode state
   let isDarkMode = $state(false);
 
   // Relay info for publishing indicator - use activeInboxRelays which reflects actual enabled relays
