@@ -769,20 +769,11 @@ export function initNdk(): NDK {
   }
 
   // AI-NOTE: Set up userStore subscription after NDK initialization to prevent initialization errors
-  userStore.subscribe(async (userState) => {
+  // AI-NOTE: Do NOT call refreshRelayStores here - relay management is handled by relaySetStore.ts
+  // Calling refreshRelayStores here caused a race condition where default relays would overwrite
+  // the user's saved relay set selection.
+  userStore.subscribe((userState) => {
     ndkSignedIn.set(userState.signedIn);
-
-    // Refresh relay stores when user state changes
-    if (ndk) {
-      try {
-        await refreshRelayStores(ndk);
-      } catch (error) {
-        console.warn(
-          "[NDK.ts] Failed to refresh relay stores on user state change:",
-          error,
-        );
-      }
-    }
   });
 
   return ndk;

@@ -1,6 +1,6 @@
 import { writable, derived, get } from "svelte/store";
 import type NDK from "@nostr-dev-kit/ndk";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { userStore } from "./userStore.ts";
 import {
   activeInboxRelays,
@@ -19,6 +19,121 @@ import {
   validateRelaySet,
 } from "../utils/relay_set_management.ts";
 import { deduplicateRelayUrls } from "../utils/relay_management.ts";
+import { searchRelays } from "../consts.ts";
+
+/**
+ * Helper to get user's write relays for publishing settings
+ * Tries userStore first, falls back to extension's getRelays(), then fetches NIP-65
+ */
+async function getUserWriteRelays(ndk: NDK): Promise<NDKRelaySet | undefined> {
+  const user = get(userStore);
+  let writeRelayUrls = user.relays?.outbox || [];
+
+  console.log("[RelaySetStore] userStore outbox relays:", writeRelayUrls);
+
+  // Fallback 1: try extension directly if userStore is empty
+  if (writeRelayUrls.length === 0 && typeof globalThis !== "undefined" && globalThis.nostr?.getRelays) {
+    console.log("[RelaySetStore] Trying extension getRelays() fallback...");
+    try {
+      const extRelays = await globalThis.nostr.getRelays();
+      writeRelayUrls = Object.entries(extRelays || {})
+        .filter(([_, config]) => (config as { write?: boolean }).write)
+        .map(([url, _]) => url);
+      console.log("[RelaySetStore] Extension write relays:", writeRelayUrls);
+    } catch (error) {
+      console.warn("[RelaySetStore] Error getting relays from extension:", error);
+    }
+  }
+
+  // Fallback 2: fetch NIP-65 relay list from known relays (like jumble does)
+  if (writeRelayUrls.length === 0 && user.pubkey) {
+    console.log("[RelaySetStore] Trying to fetch NIP-65 relay list from known relays...");
+    try {
+      // Use searchRelays (similar to jumble's BIG_RELAY_URLS) to find user's relay list
+      const relayListEvents = await ndk.fetchEvents(
+        {
+          kinds: [10002 as any], // NIP-65 relay list
+          authors: [user.pubkey],
+          limit: 1,
+        },
+        { closeOnEose: true },
+        NDKRelaySet.fromRelayUrls(searchRelays.slice(0, 4), ndk),
+      );
+
+      // Parse NIP-65 relay list to get write relays
+      for (const event of relayListEvents) {
+        for (const tag of event.tags) {
+          if (tag[0] === "r" && tag[1]) {
+            // "r" tags: tag[1] is URL, tag[2] is optional "read"/"write" marker
+            // If no marker, it's both read and write
+            const marker = tag[2]?.toLowerCase();
+            if (!marker || marker === "write") {
+              writeRelayUrls.push(tag[1]);
+            }
+          }
+        }
+      }
+      console.log("[RelaySetStore] NIP-65 write relays:", writeRelayUrls);
+    } catch (error) {
+      console.warn("[RelaySetStore] Error fetching NIP-65 relay list:", error);
+    }
+  }
+
+  if (writeRelayUrls.length === 0) {
+    console.warn("[RelaySetStore] No write relays found - using default pool");
+    return undefined;
+  }
+
+  console.log("[RelaySetStore] Using write relays:", writeRelayUrls);
+
+  // Ensure relays are in the pool and connected
+  const { NDKRelay, NDKRelayAuthPolicies } = await import("@nostr-dev-kit/ndk");
+
+  const connectedRelays: Set<import("@nostr-dev-kit/ndk").NDKRelay> = new Set();
+  const poolRelays = Array.from(ndk.pool?.relays.values() || []);
+
+  for (const url of writeRelayUrls) {
+    // Normalize URL for comparison
+    const normalizedUrl = url.replace(/\/$/, "").toLowerCase();
+
+    // Check if relay is already in pool
+    const existingRelay = poolRelays.find(
+      (r) => r.url.replace(/\/$/, "").toLowerCase() === normalizedUrl
+    );
+
+    if (existingRelay) {
+      console.log("[RelaySetStore] Relay already in pool:", existingRelay.url);
+      connectedRelays.add(existingRelay);
+    } else {
+      // Add new relay to pool
+      try {
+        console.log("[RelaySetStore] Adding relay to pool:", url);
+        const relay = new NDKRelay(url, NDKRelayAuthPolicies.signIn({ ndk }), ndk);
+        ndk.pool?.addRelay(relay);
+        // Start connection (don't await - let it connect in background)
+        relay.connect().catch((err) => {
+          console.debug(`[RelaySetStore] Relay ${url} connection deferred:`, err);
+        });
+        connectedRelays.add(relay);
+      } catch (error) {
+        console.warn(`[RelaySetStore] Failed to add relay ${url}:`, error);
+      }
+    }
+  }
+
+  if (connectedRelays.size > 0) {
+    // Wait a moment for new relays to connect
+    const hasConnected = Array.from(connectedRelays).some((r) => r.status === 1); // 1 = CONNECTED
+    if (!hasConnected) {
+      console.log("[RelaySetStore] Waiting for relay connections...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    console.log("[RelaySetStore] Created relay set with", connectedRelays.size, "relays");
+    return new NDKRelaySet(connectedRelays, ndk);
+  }
+
+  return undefined;
+}
 
 /**
  * Relay Set Store State Interface
@@ -86,11 +201,48 @@ export async function fetchRelaySets(
   relaySetStore.update((state) => ({ ...state, isLoading: true, error: null }));
 
   try {
-    // Fetch kind 30002 (relay sets) and kind 10012 (favorite relays) events
-    const events = await ndk.fetchEvents({
-      kinds: [30002 as any, 10012 as any],
-      authors: [pubkey],
+    // Get user's write relays - relay sets are stored on user's relays, not default pool
+    let userRelays = await getUserWriteRelays(ndk);
+
+    // If no user relays, try using the NDK pool directly or fallback to search relays
+    if (!userRelays) {
+      const poolRelays = Array.from(ndk.pool?.relays.values() || []);
+      if (poolRelays.length > 0) {
+        console.log("[RelaySetStore] Using NDK pool relays:", poolRelays.map(r => r.url));
+        userRelays = new NDKRelaySet(new Set(poolRelays), ndk);
+      } else {
+        // Last resort: use search relays as fallback (like jumble's BIG_RELAY_URLS)
+        console.log("[RelaySetStore] Using fallback search relays:", searchRelays.slice(0, 3));
+        userRelays = NDKRelaySet.fromRelayUrls(searchRelays.slice(0, 3), ndk);
+      }
+    }
+
+    console.log("[RelaySetStore] Fetching relay sets from:",
+      userRelays ? Array.from(userRelays.relays).map(r => r.url) : "default pool");
+
+    // Fetch with a timeout to prevent infinite loading
+    const FETCH_TIMEOUT = 10000; // 10 seconds
+
+    const fetchPromise = ndk.fetchEvents(
+      {
+        kinds: [30002 as any, 10012 as any],
+        authors: [pubkey],
+      },
+      { closeOnEose: true },
+      userRelays,
+    );
+
+    const timeoutPromise = new Promise<Set<NDKEvent>>((_, reject) => {
+      setTimeout(() => reject(new Error("Fetch timeout")), FETCH_TIMEOUT);
     });
+
+    let events: Set<NDKEvent>;
+    try {
+      events = await Promise.race([fetchPromise, timeoutPromise]);
+    } catch (timeoutError) {
+      console.warn("[RelaySetStore] Fetch timed out, continuing with empty results");
+      events = new Set();
+    }
 
     const relaySets: RelaySet[] = [];
     let favoriteRelaysData: FavoriteRelays | null = null;
@@ -166,9 +318,10 @@ export async function createRelaySet(
     event.tags = eventData.tags;
     event.content = eventData.content;
 
-    // Sign and publish
+    // Sign and publish to user's write relays (not the current pool which may reject this kind)
     await event.sign();
-    await event.publish();
+    const publishRelaySet = await getUserWriteRelays(ndk);
+    await event.publish(publishRelaySet);
 
     // Parse and add to store
     const relaySet = parseRelaySetEvent(event);
@@ -236,9 +389,10 @@ export async function updateRelaySet(
     event.tags = eventData.tags;
     event.content = eventData.content;
 
-    // Sign and publish
+    // Sign and publish to user's write relays
     await event.sign();
-    await event.publish();
+    const publishRelaySet = await getUserWriteRelays(ndk);
+    await event.publish(publishRelaySet);
 
     // Update store
     const updatedSet = parseRelaySetEvent(event);
@@ -292,7 +446,8 @@ export async function deleteRelaySet(setId: string, ndk: NDK): Promise<void> {
     event.content = "Deleted relay set";
 
     await event.sign();
-    await event.publish();
+    const publishRelaySet = await getUserWriteRelays(ndk);
+    await event.publish(publishRelaySet);
 
     // Update store
     relaySetStore.update((state) => ({
@@ -375,38 +530,45 @@ export async function setActiveRelaySet(
       }
     }
 
-    // Update Alexandria's active relay stores
-    activeInboxRelays.set(relays);
-    activeOutboxRelays.set(relays);
-
-    // Add new relays to NDK pool
+    // Add new relays to NDK pool FIRST, before updating stores
+    // This prevents race conditions where effects try to use empty pool
     const deduped = deduplicateRelayUrls(relays);
     console.log(`[RelaySetStore] Adding ${deduped.length} new relays to pool`);
 
+    // Import NDK classes once
+    const { NDKRelay, NDKRelayAuthPolicies } = await import("@nostr-dev-kit/ndk");
+
+    const connectionPromises: Promise<void>[] = [];
     for (const url of deduped) {
       try {
-        // Import createRelayWithAuth from ndk.ts
-        const NDKRelay = (await import("@nostr-dev-kit/ndk")).NDKRelay;
-        const NDKRelayAuthPolicies = (await import("@nostr-dev-kit/ndk")).NDKRelayAuthPolicies;
-
-        // Determine protocol
-        const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-        const protocol = isLocal ? "ws://" : "wss://";
-        const normalizedUrl = url.startsWith("ws://") || url.startsWith("wss://")
-          ? url
-          : `${protocol}${url}`;
-
-        const relay = new NDKRelay(normalizedUrl, NDKRelayAuthPolicies.signIn({ ndk }), ndk);
-        relay.connect().catch((err) => {
-          console.debug(`[RelaySetStore] Relay ${normalizedUrl} connection deferred:`, err);
-        });
-
+        // URL is already normalized by deduplicateRelayUrls (handles ws:// vs wss:// for local relays)
+        const relay = new NDKRelay(url, NDKRelayAuthPolicies.signIn({ ndk }), ndk);
         ndk.pool?.addRelay(relay);
-        console.log(`[RelaySetStore] Added relay: ${normalizedUrl}`);
+        console.log(`[RelaySetStore] Added relay: ${url}`);
+
+        // Collect connection promises
+        connectionPromises.push(
+          relay.connect().catch((err) => {
+            console.debug(`[RelaySetStore] Relay ${url} connection deferred:`, err);
+          })
+        );
       } catch (error) {
         console.warn(`[RelaySetStore] Failed to add relay ${url}:`, error);
       }
     }
+
+    // Wait for at least one relay to connect (with timeout)
+    console.log("[RelaySetStore] Waiting for relay connections...");
+    await Promise.race([
+      Promise.any(connectionPromises).catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+
+    console.log(`[RelaySetStore] NDK pool now has ${ndk.pool?.relays.size || 0} relays`);
+
+    // NOW update Alexandria's active relay stores (after pool is populated)
+    activeInboxRelays.set(relays);
+    activeOutboxRelays.set(relays);
 
     // Update store state
     relaySetStore.update((state) => ({
@@ -426,7 +588,6 @@ export async function setActiveRelaySet(
     console.log(
       `[RelaySetStore] ✅ Successfully switched to relay set: ${setId || "favorites"}`,
     );
-    console.log(`[RelaySetStore] NDK pool now has ${ndk.pool?.relays.size || 0} relays`);
 
     // Increment switch counter to signal components to refetch data
     relaySwitchCounter.update((n) => n + 1);
@@ -534,9 +695,10 @@ async function updateFavoriteRelaysEvent(ndk: NDK): Promise<void> {
   event.tags = eventData.tags;
   event.content = eventData.content;
 
-  // Sign and publish
+  // Sign and publish to user's write relays
   await event.sign();
-  await event.publish();
+  const publishRelaySet = await getUserWriteRelays(ndk);
+  await event.publish(publishRelaySet);
 
   console.log(
     `[RelaySetStore] Updated favorite relays event (${state.favoriteRelays.length} relays, ${relaySetRefs.length} set refs)`,

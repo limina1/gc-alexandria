@@ -2,6 +2,7 @@ import { WebSocketPool } from "../data_structures/websocket_pool.ts";
 import { error } from "@sveltejs/kit";
 import { naddrDecode, neventDecode } from "../utils.ts";
 import { activeInboxRelays, activeOutboxRelays } from "../ndk.ts";
+import { activeRelaySet } from "../stores/relaySetStore.ts";
 import { get } from "svelte/store";
 
 export interface NostrEvent {
@@ -78,6 +79,10 @@ export async function fetchNostrEvent(
   // This ensures the function uses the user's configured relays and can find events
   // across multiple relays rather than being limited to a single hardcoded relay.
 
+  // Check if user has a custom relay set selected
+  const currentRelaySet = get(activeRelaySet);
+  const hasCustomRelaySet = currentRelaySet !== null;
+
   // Get available relays from the active relay stores
   const inboxRelays = get(activeInboxRelays);
   const outboxRelays = get(activeOutboxRelays);
@@ -97,16 +102,27 @@ export async function fetchNostrEvent(
     }
   }
 
-  // AI-NOTE:  Enhanced relay strategy for better event discovery
-  // Always include search relays in the relay set for comprehensive event discovery
-  const { searchRelays, secondaryRelays } = await import("../consts.ts");
-  const allRelays = [...availableRelays, ...searchRelays, ...secondaryRelays];
-  const uniqueRelays = [...new Set(allRelays)]; // Remove duplicates
-
-  console.debug(
-    `[fetchNostrEvent] Trying ${uniqueRelays.length} relays for event discovery:`,
-    uniqueRelays,
-  );
+  // AI-NOTE: Only add search/secondary relays when NO custom relay set is active
+  // When user selects a specific relay set (e.g., local relays), respect that choice
+  // and don't add public relays - the content may only exist on those specific relays
+  let uniqueRelays: string[];
+  if (hasCustomRelaySet) {
+    // User has selected a custom relay set - only use those relays
+    uniqueRelays = [...new Set(availableRelays)];
+    console.debug(
+      `[fetchNostrEvent] Using custom relay set "${currentRelaySet.title}" with ${uniqueRelays.length} relays:`,
+      uniqueRelays,
+    );
+  } else {
+    // No custom set - add search relays for comprehensive event discovery
+    const { searchRelays, secondaryRelays } = await import("../consts.ts");
+    const allRelays = [...availableRelays, ...searchRelays, ...secondaryRelays];
+    uniqueRelays = [...new Set(allRelays)];
+    console.debug(
+      `[fetchNostrEvent] Using default relays with search fallback (${uniqueRelays.length} relays):`,
+      uniqueRelays,
+    );
+  }
 
   // Try all available relays in parallel and return the first result
   const relayPromises = uniqueRelays.map(async (relay) => {

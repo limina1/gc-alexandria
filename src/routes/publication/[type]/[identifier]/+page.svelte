@@ -16,7 +16,9 @@
     fetchEventByNevent,
   } from "$lib/utils/websocket_utils.ts";
   import type { NostrEvent } from "$lib/utils/websocket_utils.ts";
-  import type { NDKEvent } from "@nostr-dev-kit/ndk";
+  import type { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
+  import { activeRelaySet } from "$lib/stores/relaySetStore";
+  import { naddrDecode, neventDecode } from "$lib/utils";
 
   let { data }: PageProps = $props();
 
@@ -52,26 +54,78 @@
     try {
       const { type, identifier } = data.identifierInfo;
       let fetchedEvent: NostrEvent | null = null;
+      let ndkEvent: NDKEvent | null = null;
 
-      // Handle different identifier types
-      switch (type) {
-        case "id":
-          fetchedEvent = await fetchEventById(identifier);
-          break;
-        case "d":
-          fetchedEvent = await fetchEventByDTag(identifier);
-          break;
-        case "naddr":
-          fetchedEvent = await fetchEventByNaddr(identifier);
-          break;
-        case "nevent":
-          fetchedEvent = await fetchEventByNevent(identifier);
-          break;
-        default:
-          throw new Error(`Unsupported identifier type: ${type}`);
+      // AI-NOTE: Use NDK for fetching when a custom relay set is active
+      // This is necessary for NIP-42 authenticated relays because NDK has the auth policy
+      // configured, while websocket_utils uses raw WebSocket connections without auth
+      const hasCustomRelaySet = $activeRelaySet !== null;
+
+      if (hasCustomRelaySet && data.ndk) {
+        console.log(`[Publication] Using NDK for fetch (custom relay set: ${$activeRelaySet?.title})`);
+
+        // Build filter based on identifier type
+        let filter: NDKFilter;
+        switch (type) {
+          case "id":
+            filter = { ids: [identifier], limit: 1 };
+            break;
+          case "d":
+            filter = { "#d": [identifier], limit: 1 };
+            break;
+          case "naddr": {
+            const decoded = naddrDecode(identifier);
+            filter = {
+              kinds: [decoded.kind],
+              authors: [decoded.pubkey],
+              "#d": [decoded.identifier],
+              limit: 1,
+            };
+            break;
+          }
+          case "nevent": {
+            const decoded = neventDecode(identifier);
+            filter = { ids: [decoded.id], limit: 1 };
+            break;
+          }
+          default:
+            throw new Error(`Unsupported identifier type: ${type}`);
+        }
+
+        // Fetch using NDK (which handles NIP-42 auth)
+        const events = await data.ndk.fetchEvents(filter, { closeOnEose: true });
+        if (events.size > 0) {
+          ndkEvent = Array.from(events)[0];
+        }
+      } else {
+        // Fall back to websocket_utils for default relays
+        console.log("[Publication] Using websocket_utils for fetch (no custom relay set)");
+
+        // Handle different identifier types
+        switch (type) {
+          case "id":
+            fetchedEvent = await fetchEventById(identifier);
+            break;
+          case "d":
+            fetchedEvent = await fetchEventByDTag(identifier);
+            break;
+          case "naddr":
+            fetchedEvent = await fetchEventByNaddr(identifier);
+            break;
+          case "nevent":
+            fetchedEvent = await fetchEventByNevent(identifier);
+            break;
+          default:
+            throw new Error(`Unsupported identifier type: ${type}`);
+        }
       }
 
-      if (fetchedEvent && data.ndk) {
+      // Handle the result
+      if (ndkEvent) {
+        indexEvent = ndkEvent;
+        initializePublicationComponents(ndkEvent);
+        initialized = true;
+      } else if (fetchedEvent && data.ndk) {
         const clientEvent = createNDKEvent(data.ndk, fetchedEvent);
         indexEvent = clientEvent;
         initializePublicationComponents(clientEvent);
