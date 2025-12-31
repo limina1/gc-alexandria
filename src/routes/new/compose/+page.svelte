@@ -78,6 +78,14 @@
     });
   }
 
+  // Helper to add NIP-70 protected tag if needed
+  function addProtectedTag(tags: string[][], isProtected: boolean): string[][] {
+    if (isProtected && !tags.some(t => t[0] === "-")) {
+      return [["-"], ...tags];
+    }
+    return tags;
+  }
+
   // Handle unified publishing from ZettelEditor
   async function handlePublishArticle(events: any) {
     isPublishing = true;
@@ -87,6 +95,12 @@
     const totalEvents =
       (events.indexEvent ? 1 : 0) + events.contentEvents.length;
     publishProgress = { current: 0, total: totalEvents };
+
+    // Check if events should be protected (NIP-70)
+    const isProtected = events.isProtected === true;
+    if (isProtected) {
+      console.log("[Compose] Publishing as protected events (NIP-70)");
+    }
 
     // Debug: Log the first content event to see its structure
     if (events.contentEvents.length > 0) {
@@ -107,7 +121,7 @@
           {
             content: events.indexEvent.content,
             kind: events.indexEvent.kind,
-            tags: events.indexEvent.tags,
+            tags: addProtectedTag(events.indexEvent.tags, isProtected),
             onError: (error) => {
               console.error("Index event publish failed:", error);
             },
@@ -128,7 +142,7 @@
           {
             content: event.content,
             kind: event.kind,
-            tags: event.tags,
+            tags: addProtectedTag(event.tags, isProtected),
             onError: (error) => {
               console.error(`Content event ${i + 1} publish failed:`, error);
             },
@@ -164,6 +178,12 @@
     const totalEvents = events.contentEvents.length;
     publishProgress = { current: 0, total: totalEvents };
 
+    // Check if events should be protected (NIP-70)
+    const isProtected = events.isProtected === true;
+    if (isProtected) {
+      console.log("[Compose] Publishing scattered notes as protected events (NIP-70)");
+    }
+
     // Debug: Log the structure of events being published (without content)
     console.log("=== PUBLISHING SCATTERED NOTES ===");
     console.log(`Number of content events: ${events.contentEvents.length}`);
@@ -178,7 +198,7 @@
           {
             content: event.content,
             kind: event.kind,
-            tags: event.tags,
+            tags: addProtectedTag(event.tags, isProtected),
             onError: (error) => {
               console.error(`Content event ${i + 1} publish failed:`, error);
             },

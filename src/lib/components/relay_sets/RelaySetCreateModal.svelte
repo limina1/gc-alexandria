@@ -3,6 +3,8 @@
   import { createRelaySet } from "$lib/stores/relaySetStore";
   import { getNdkContext } from "$lib/ndk";
   import { normalizeRelayUrl } from "$lib/utils/relay_management";
+  import { userStore } from "$lib/stores/userStore";
+  import { onMount } from "svelte";
 
   let { open = $bindable(false) } = $props<{ open: boolean }>();
 
@@ -12,6 +14,31 @@
   let relayUrls = $state<string[]>([""]);
   let error = $state<string | null>(null);
   let isSubmitting = $state(false);
+
+  // Get user's write relays for displaying where settings will be published
+  let writeRelays = $state<string[]>([]);
+
+  // Fetch write relays from userStore or extension
+  async function fetchWriteRelays() {
+    let relays = $userStore.relays?.outbox || [];
+
+    // Fallback: try extension directly
+    if (relays.length === 0 && typeof globalThis !== "undefined" && globalThis.nostr?.getRelays) {
+      const extRelays = await globalThis.nostr.getRelays();
+      relays = Object.entries(extRelays || {})
+        .filter(([_, config]) => (config as { write?: boolean }).write)
+        .map(([url, _]) => url);
+    }
+
+    writeRelays = relays;
+  }
+
+  // Refresh when modal opens
+  $effect(() => {
+    if (open) {
+      fetchWriteRelays();
+    }
+  });
 
   function addRelayInput() {
     relayUrls = [...relayUrls, ""];
@@ -164,6 +191,18 @@
         {error}
       </div>
     {/if}
+
+    <!-- Publishing Info -->
+    <div class="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-sm">
+      <span class="text-gray-600 dark:text-gray-400">Publishing settings to: </span>
+      {#if writeRelays.length > 0}
+        <span class="text-gray-800 dark:text-gray-200 font-mono text-xs">
+          {writeRelays.map(r => r.replace(/^wss?:\/\//, '')).join(', ')}
+        </span>
+      {:else}
+        <span class="text-yellow-600 dark:text-yellow-400">No write relays configured</span>
+      {/if}
+    </div>
 
     <!-- Actions -->
     <div class="flex gap-2 justify-end pt-4">

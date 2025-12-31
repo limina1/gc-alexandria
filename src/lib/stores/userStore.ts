@@ -117,26 +117,22 @@ async function getUserPreferredRelays(
       },
     );
   } else {
+    // Parse NIP-65 relay list (kind 10002)
+    // Tags are: ["r", "url"] for both, ["r", "url", "read"] for read-only, ["r", "url", "write"] for write-only
     relayList.tags.forEach((tag: string[]) => {
-      switch (tag[0]) {
-        case "r":
-          inboxRelays.add(
-            new NDKRelay(tag[1], NDKRelayAuthPolicies.signIn({ ndk }), ndk),
-          );
-          break;
-        case "w":
-          outboxRelays.add(
-            new NDKRelay(tag[1], NDKRelayAuthPolicies.signIn({ ndk }), ndk),
-          );
-          break;
-        default:
-          inboxRelays.add(
-            new NDKRelay(tag[1], NDKRelayAuthPolicies.signIn({ ndk }), ndk),
-          );
-          outboxRelays.add(
-            new NDKRelay(tag[1], NDKRelayAuthPolicies.signIn({ ndk }), ndk),
-          );
-          break;
+      if (tag[0] !== "r" || !tag[1]) return;
+
+      const relay = new NDKRelay(tag[1], NDKRelayAuthPolicies.signIn({ ndk }), ndk);
+      const marker = tag[2]; // "read", "write", or undefined (both)
+
+      if (!marker) {
+        // No marker means both read and write
+        inboxRelays.add(relay);
+        outboxRelays.add(relay);
+      } else if (marker === "read") {
+        inboxRelays.add(relay);
+      } else if (marker === "write") {
+        outboxRelays.add(relay);
       }
     });
   }

@@ -10,6 +10,7 @@
   import { postProcessAsciidoctorHtml } from "$lib/utils/markup/asciidoctorPostProcessor.ts";
   import { getNdkContext, activeInboxRelays } from "$lib/ndk.ts";
   import { relaySwitchCounter, activeRelaySet } from "$lib/stores/relaySetStore";
+  import { normalizeRelayUrl } from "$lib/utils/relay_management.ts";
   import { NDKRelaySet } from "@nostr-dev-kit/ndk";
 
   const ndk = getNdkContext();
@@ -60,26 +61,40 @@
         return;
       }
 
-      // Use active relay set directly, fall back to activeInboxRelays
+      // Use activeInboxRelays which reflects enabled relays (after checkbox toggles)
+      // Fall back to relay set's full list, then defaults
       const currentSet = get(activeRelaySet);
-      const relays = currentSet?.relays ?? get(activeInboxRelays);
+      const inboxRelays = get(activeInboxRelays);
+      const relays = inboxRelays.length > 0 ? inboxRelays : (currentSet?.relays ?? []);
       console.log("[MyNotes] Active relay set:", currentSet?.title ?? "none");
+      console.log("[MyNotes] Using inbox relays:", inboxRelays.length);
       console.log("[MyNotes] Fetching from relays:", relays);
 
-      const relayUrls = relays.map((r) => {
-        if (!r.startsWith("ws://") && !r.startsWith("wss://")) {
-          const isLocal = r.includes("localhost") || r.includes("127.0.0.1");
-          return isLocal ? `ws://${r}` : `wss://${r}`;
-        }
-        return r;
-      });
+      // Normalize relay URLs (handles ws:// vs wss:// for local relays)
+      const relayUrls = relays.map((r) => normalizeRelayUrl(r));
 
       console.log("[MyNotes] Normalized relay URLs:", relayUrls);
 
-      const relaySet =
-        relayUrls.length > 0
-          ? NDKRelaySet.fromRelayUrls(relayUrls, ndk)
-          : undefined;
+      // Use relays from NDK pool that match our URLs (they're already connected)
+      // Don't create new relay instances with fromRelayUrls as those won't be connected
+      // Use case-insensitive matching for relay URLs
+      const poolRelays = Array.from(ndk.pool?.relays.values() || []);
+      const matchingRelays = poolRelays.filter((relay) =>
+        relayUrls.some((url) =>
+          relay.url.replace(/\/$/, "").toLowerCase() === url.replace(/\/$/, "").toLowerCase()
+        )
+      );
+
+      console.log("[MyNotes] Pool has", poolRelays.length, "relays, matched", matchingRelays.length);
+
+      // Create relay set from matched pool relays, or use entire pool as fallback
+      let relaySet: NDKRelaySet | undefined;
+      if (matchingRelays.length > 0) {
+        relaySet = new NDKRelaySet(new Set(matchingRelays), ndk);
+      } else if (poolRelays.length > 0) {
+        console.log("[MyNotes] No matching relays in pool, using entire pool");
+        relaySet = new NDKRelaySet(new Set(poolRelays), ndk);
+      }
 
       console.log("[MyNotes] RelaySet created:", relaySet ? "yes" : "no (using default pool)");
 

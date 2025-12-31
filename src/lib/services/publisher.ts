@@ -1,8 +1,12 @@
 import { getMimeTags } from "../utils/mime.ts";
 import { metadataToTags } from "../utils/asciidoc_metadata.ts";
 import { parseAsciiDocWithMetadata } from "../utils/asciidoc_parser.ts";
-import NDK, { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKRelaySet, NDKRelay, NDKRelayAuthPolicies } from "@nostr-dev-kit/ndk";
 import { nip19 } from "nostr-tools";
+import { get } from "svelte/store";
+import { activeOutboxRelays } from "../ndk.ts";
+import { activeRelaySet } from "../stores/relaySetStore.ts";
+import { normalizeRelayUrl } from "../utils/relay_management.ts";
 
 export interface PublishResult {
   success: boolean;
@@ -152,13 +156,51 @@ export async function publishSingleEvent(
   }
 
   try {
-    const allRelayUrls = Array.from(ndk.pool?.relays.values() || []).map(
-      (r) => r.url,
-    );
-    if (allRelayUrls.length === 0) {
-      throw new Error("No relays available in NDK pool");
+    // Use activeOutboxRelays which reflects enabled relays (after checkbox toggles)
+    // Fall back to relay set's full list, then NDK pool
+    const currentSet = get(activeRelaySet);
+    const outboxRelays = get(activeOutboxRelays);
+    let relayUrls: string[];
+
+    if (outboxRelays.length > 0) {
+      relayUrls = outboxRelays;
+      console.log(`[Publisher] Using outbox relays (${currentSet?.title ?? "default"}):`, relayUrls);
+    } else if (currentSet?.relays?.length) {
+      relayUrls = currentSet.relays;
+      console.log(`[Publisher] Using relay set "${currentSet.title}":`, relayUrls);
+    } else {
+      relayUrls = Array.from(ndk.pool?.relays.values() || []).map((r) => r.url);
+      console.log("[Publisher] Using NDK pool relays:", relayUrls);
     }
-    const relaySet = NDKRelaySet.fromRelayUrls(allRelayUrls, ndk);
+
+    if (relayUrls.length === 0) {
+      throw new Error("No relays available for publishing");
+    }
+
+    // Normalize URLs (handles ws:// vs wss:// for local relays)
+    const normalizedUrls = relayUrls.map((url) => normalizeRelayUrl(url));
+
+    // Use relays from NDK pool that match our URLs (they're already connected)
+    // Use case-insensitive matching for relay URLs
+    const poolRelays = Array.from(ndk.pool?.relays.values() || []);
+    const matchingRelays = poolRelays.filter((relay) =>
+      normalizedUrls.some((url) =>
+        relay.url.replace(/\/$/, "").toLowerCase() === url.replace(/\/$/, "").toLowerCase()
+      )
+    );
+
+    console.log(`[Publisher] Pool has ${poolRelays.length} relays, matched ${matchingRelays.length}`);
+
+    // Create relay set from matched pool relays, or fallback to entire pool
+    let relaySet: NDKRelaySet;
+    if (matchingRelays.length > 0) {
+      relaySet = new NDKRelaySet(new Set(matchingRelays), ndk);
+    } else if (poolRelays.length > 0) {
+      console.log("[Publisher] No matching relays, using entire pool");
+      relaySet = new NDKRelaySet(new Set(poolRelays), ndk);
+    } else {
+      throw new Error("No connected relays available for publishing");
+    }
 
     // Fix a-tags that have placeholder "pubkey" with actual pubkey
     const fixedTags = tags.map((tag) => {

@@ -69,6 +69,9 @@
   let generatedEvents = $state<any>(null);
   let contentType = $state<"article" | "scattered-notes" | "none">("none");
 
+  // NIP-70 protected event state (adds "-" tag for relays requiring auth)
+  let isProtected = $state(false);
+
   // Dark mode state
   let isDarkMode = $state(false);
 
@@ -283,6 +286,9 @@
       // This prevents postMessage cloning errors
       const serializableEvents = JSON.parse(JSON.stringify(generatedEvents));
 
+      // Include isProtected flag for NIP-70 support
+      serializableEvents.isProtected = isProtected;
+
       if (contentType === "article" && serializableEvents.indexEvent) {
         // Full article: publish both index event (30040) and content events (30041)
         onPublishArticle(serializableEvents);
@@ -290,6 +296,7 @@
         // Only notes: publish just the content events (30041)
         const notesOnly = {
           contentEvents: serializableEvents.contentEvents,
+          isProtected: isProtected,
         };
         onPublishScatteredNotes(notesOnly);
       }
@@ -979,6 +986,17 @@
               | {relayCount} relay{relayCount !== 1 ? 's' : ''}
             </span>
           </div>
+
+          <!-- NIP-70 Protected Event Checkbox -->
+          <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              bind:checked={isProtected}
+              class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <span class="font-medium">Protected</span>
+            <span class="text-gray-400" title="NIP-70: Adds '-' tag for relays requiring authentication">(NIP-70)</span>
+          </label>
         </div>
       </div>
 

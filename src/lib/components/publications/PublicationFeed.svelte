@@ -9,8 +9,8 @@
     getMatchingTags,
     toNpub,
   } from "$lib/utils/nostrUtils";
-  import { WebSocketPool } from "$lib/data_structures/websocket_pool";
-  import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
+  import NDK, { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
+  import { normalizeRelayUrl } from "$lib/utils/relay_management";
   import { searchCache } from "$lib/utils/searchCache";
   import { indexEventCache } from "$lib/utils/indexEventCache";
   import { isValidNip05Address } from "$lib/utils/search_utility";
@@ -133,6 +133,13 @@
     const newRelays = [...inboxRelays, ...outboxRelays];
     const userState = $userStore;
 
+    // Skip processing if a relay switch is in progress
+    // The relaySwitchCounter effect handles switching exclusively
+    if (relaySwitchInProgress) {
+      console.debug('[PublicationFeed] Skipping relay store effect - switch in progress');
+      return;
+    }
+
     if (newRelays.length > 0 && !hasInitialized) {
       console.debug('[PublicationFeed] Relays available, initializing');
       hasInitialized = true;
@@ -155,7 +162,7 @@
       // This ensures that when a user logs in and their relays are loaded, we fetch events from those relays
       const currentRelaysString = allRelays.sort().join(',');
       const newRelaysString = newRelays.sort().join(',');
-      
+
       if (currentRelaysString !== newRelaysString) {
         console.debug('[PublicationFeed] Relay configuration changed, re-fetching events');
         // Clear cache to force fresh fetch from new relays
@@ -170,7 +177,7 @@
       allRelaysCount: allRelays.length,
       allRelays: allRelays
     });
-    
+
     if (!ndk) {
       console.error('[PublicationFeed] No NDK instance available');
       loading = false;
@@ -200,120 +207,85 @@
     relayStatuses = Object.fromEntries(
       allRelays.map((r: string) => [r, "pending"]),
     );
-    let allEvents: NDKEvent[] = [];
     const eventMap = new Map<string, NDKEvent>();
 
-    // Helper to fetch from a single relay with timeout
-    async function fetchFromRelay(relay: string): Promise<void> {
-      // Normalize relay URL to ensure wss:// prefix
-      let normalizedRelay = relay;
-      if (!relay.startsWith('ws://') && !relay.startsWith('wss://')) {
-        const isLocal = relay.includes('localhost') || relay.includes('127.0.0.1');
-        normalizedRelay = isLocal ? `ws://${relay}` : `wss://${relay}`;
+    try {
+      // Normalize relay URLs
+      const normalizedUrls = allRelays.map((r) => normalizeRelayUrl(r));
+      console.debug('[PublicationFeed] Normalized relay URLs:', normalizedUrls);
+
+      // Get matching relays from NDK pool (they have auth configured)
+      // Use case-insensitive matching for relay URLs
+      const poolRelays = Array.from(ndk.pool?.relays.values() || []);
+      const matchingRelays = poolRelays.filter((relay) =>
+        normalizedUrls.some((url) =>
+          relay.url.replace(/\/$/, "").toLowerCase() === url.replace(/\/$/, "").toLowerCase()
+        )
+      );
+
+      console.debug(`[PublicationFeed] Pool has ${poolRelays.length} relays, matched ${matchingRelays.length}`);
+      console.debug('[PublicationFeed] Pool relay URLs:', poolRelays.map(r => r.url));
+      console.debug('[PublicationFeed] Looking for URLs:', normalizedUrls);
+
+      let relaySet: NDKRelaySet | undefined;
+      if (matchingRelays.length > 0) {
+        relaySet = new NDKRelaySet(new Set(matchingRelays), ndk);
+        console.debug('[PublicationFeed] Using matched relays:', matchingRelays.map(r => r.url));
+      } else {
+        // No matching relays in pool - DO NOT fall back to all pool relays
+        // This would mix results from different relay sets
+        console.warn('[PublicationFeed] No matching relays found in pool, skipping fetch');
+        console.warn('[PublicationFeed] Expected:', normalizedUrls);
+        console.warn('[PublicationFeed] Pool has:', poolRelays.map(r => r.url));
+        loading = false;
+        return;
       }
 
-      try {
-        console.debug(`[PublicationFeed] Fetching from relay: ${normalizedRelay}`);
+      // Fetch using NDK (handles NIP-42 auth automatically)
+      console.debug('[PublicationFeed] Fetching index events using NDK...');
+      const events = await ndk.fetchEvents(
+        { kinds: [indexKind], limit: 1000 },
+        { closeOnEose: true },
+        relaySet
+      );
 
-        // Use WebSocketPool to get a pooled connection
-        const ws = await WebSocketPool.instance.acquire(normalizedRelay);
-        const subId = crypto.randomUUID();
-        
-        // Create a promise that resolves with the events
-        const eventPromise = new Promise<Set<NDKEvent>>((resolve, reject) => {
-          const events = new Set<NDKEvent>();
-          
-          const messageHandler = (ev: MessageEvent) => {
-            try {
-              const data = JSON.parse(ev.data);
-              
-              if (data[0] === "EVENT" && data[1] === subId) {
-                const event = new NDKEvent(ndk, data[2]);
-                events.add(event);
-              } else if (data[0] === "EOSE" && data[1] === subId) {
-                resolve(events);
-              }
-            } catch (error) {
-              console.error(`[PublicationFeed] Error parsing message from ${relay}:`, error);
-            }
-          };
-          
-          const errorHandler = (ev: Event) => {
-            reject(new Error(`WebSocket error for ${relay}: ${ev}`));
-          };
-          
-          ws.addEventListener("message", messageHandler);
-          ws.addEventListener("error", errorHandler);
-          
-          // Send the subscription request
-          ws.send(JSON.stringify([
-            "REQ", 
-            subId, 
-            { kinds: [indexKind], limit: 1000 }
-          ]));
-          
-          // Set up cleanup - 10 second timeout to allow slower relays to respond
-          setTimeout(() => {
-            ws.removeEventListener("message", messageHandler);
-            ws.removeEventListener("error", errorHandler);
-            WebSocketPool.instance.release(ws);
-            resolve(events);
-          }, 10000);
-        });
-        
-        let eventSet = await eventPromise;
-        
-        console.debug(`[PublicationFeed] Raw events from ${relay}:`, eventSet.size);
-        eventSet = filterValidIndexEvents(eventSet);
-        console.debug(`[PublicationFeed] Valid events from ${relay}:`, eventSet.size);
-        
-        relayStatuses = { ...relayStatuses, [normalizedRelay]: "found" };
-        
-        // Add new events to the map and update the view immediately
-        const newEvents: NDKEvent[] = [];
-        for (const event of eventSet) {
-          const tagAddress = event.tagAddress();
-          if (!eventMap.has(tagAddress)) {
-            eventMap.set(tagAddress, event);
-            newEvents.push(event);
-          }
+      console.debug(`[PublicationFeed] Raw events from NDK:`, events.size);
+      const validEvents = filterValidIndexEvents(events);
+      console.debug(`[PublicationFeed] Valid events after filtering:`, validEvents.size);
+
+      // Update relay statuses
+      for (const url of normalizedUrls) {
+        relayStatuses = { ...relayStatuses, [url]: "found" };
+      }
+
+      // Add events to map (dedupe by tag address)
+      for (const event of validEvents) {
+        const tagAddress = event.tagAddress();
+        if (!eventMap.has(tagAddress)) {
+          eventMap.set(tagAddress, event);
         }
-        
-        if (newEvents.length > 0) {
-          // Update allIndexEvents with new events
-          allIndexEvents = Array.from(eventMap.values());
-          // Sort by created_at descending
-          allIndexEvents.sort((a, b) => b.created_at! - a.created_at!);
-          
-          // Update the view immediately with new events
-          eventsInView = allIndexEvents.slice(0, publicationsToDisplay);
-          endOfFeed = allIndexEvents.length <= publicationsToDisplay;
-          
-          console.debug(`[PublicationFeed] Updated view with ${newEvents.length} new events from ${relay}, total: ${allIndexEvents.length}`);
-        }
-      } catch (err) {
-        console.error(`[PublicationFeed] Error fetching from relay ${normalizedRelay}:`, err);
-        relayStatuses = { ...relayStatuses, [normalizedRelay]: "notfound" };
+      }
+
+      // Update allIndexEvents
+      allIndexEvents = Array.from(eventMap.values());
+      // Sort by created_at descending
+      allIndexEvents.sort((a, b) => b.created_at! - a.created_at!);
+
+      console.debug(`[PublicationFeed] Final event count:`, allIndexEvents.length);
+
+      // Cache the fetched events
+      indexEventCache.set(allRelays, allIndexEvents);
+
+      // Update the view
+      eventsInView = allIndexEvents.slice(0, publicationsToDisplay);
+      endOfFeed = allIndexEvents.length <= publicationsToDisplay;
+    } catch (err) {
+      console.error('[PublicationFeed] Error fetching events:', err);
+      for (const url of allRelays) {
+        relayStatuses = { ...relayStatuses, [normalizeRelayUrl(url)]: "notfound" };
       }
     }
 
-    // Fetch from all relays in parallel, return events as they arrive
-    console.debug(`[PublicationFeed] Starting fetch from ${allRelays.length} relays`);
-    
-    // Start all relay fetches in parallel
-    const fetchPromises = allRelays.map(fetchFromRelay);
-    
-    // Wait for all to complete (but events are shown as they arrive)
-    await Promise.allSettled(fetchPromises);
-    
-    console.debug(`[PublicationFeed] All relays completed, final event count:`, allIndexEvents.length);
-    
-    // Cache the fetched events
-    indexEventCache.set(allRelays, allIndexEvents);
-
-    // Final update to ensure we have the latest view
-    eventsInView = allIndexEvents.slice(0, publicationsToDisplay);
-    endOfFeed = allIndexEvents.length <= publicationsToDisplay;
     loading = false;
   }
 
@@ -540,18 +512,23 @@
   // AI-NOTE: Watch for user authentication state changes to re-fetch events when user logs in/out
   $effect(() => {
     const userState = $userStore;
-    
+
+    // Skip processing if a relay switch is in progress
+    if (relaySwitchInProgress) {
+      return;
+    }
+
     if (hasInitialized && userState.signedIn) {
       console.debug('[PublicationFeed] User signed in, checking if we need to re-fetch events');
       // Check if we have user-specific relays that we haven't fetched from yet
       const inboxRelays = $activeInboxRelays;
       const outboxRelays = $activeOutboxRelays;
       const newRelays = [...inboxRelays, ...outboxRelays];
-      
+
       if (newRelays.length > 0) {
         const currentRelaysString = allRelays.sort().join(',');
         const newRelaysString = newRelays.sort().join(',');
-        
+
         if (currentRelaysString !== newRelaysString) {
           console.debug('[PublicationFeed] User logged in with new relays, re-fetching events');
           // Clear cache to force fresh fetch from user's relays
@@ -574,6 +551,10 @@
   // Track the last processed relay switch to prevent infinite loops
   let lastProcessedSwitchCount = $state(0);
 
+  // Flag to prevent relay store effect from triggering during relay switch
+  // This prevents a race condition where both effects try to fetch simultaneously
+  let relaySwitchInProgress = $state(false);
+
   // AI-NOTE: Watch for explicit relay set switches via the relaySwitchCounter
   // This ensures a complete refresh when the user switches relay sets from the dropdown
   $effect(() => {
@@ -582,11 +563,13 @@
     if (switchCount > lastProcessedSwitchCount) {
       lastProcessedSwitchCount = switchCount;
       console.log('[PublicationFeed] Relay set switched, forcing complete refresh');
+
+      // Set flag to prevent relay store effect from interfering
+      relaySwitchInProgress = true;
+
       // Clear all caches and state
       indexEventCache.clear();
       searchCache.clear();
-      // Drain WebSocket pool to ensure fresh connections to new relays
-      WebSocketPool.instance.drain();
       allRelays = [];
       allIndexEvents = [];
       eventsInView = [];
@@ -600,7 +583,10 @@
         if (relays.length === 0) {
           console.warn('[PublicationFeed] No relays available after switch!');
         }
-        initializeAndFetch();
+        initializeAndFetch().finally(() => {
+          // Clear the flag after fetch completes
+          relaySwitchInProgress = false;
+        });
       }, 1500);
     }
   });

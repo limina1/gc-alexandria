@@ -12,15 +12,24 @@ import { get } from "svelte/store";
 
 /**
  * Normalizes a relay URL to a standard format
+ * Uses ws:// for localhost/127.0.0.1, wss:// for remote relays
  * @param url The relay URL to normalize
  * @returns The normalized relay URL
  */
 export function normalizeRelayUrl(url: string): string {
-  let normalized = url.toLowerCase().trim();
+  let normalized = url.trim();
 
-  // Ensure protocol is present
-  if (!normalized.startsWith("ws://") && !normalized.startsWith("wss://")) {
-    normalized = "wss://" + normalized;
+  // Check if this is a local relay (case-insensitive check)
+  const lowerUrl = normalized.toLowerCase();
+  const isLocal = lowerUrl.includes("localhost") || lowerUrl.includes("127.0.0.1");
+
+  // Ensure correct protocol is present
+  if (!lowerUrl.startsWith("ws://") && !lowerUrl.startsWith("wss://")) {
+    // Add appropriate protocol
+    normalized = (isLocal ? "ws://" : "wss://") + normalized;
+  } else if (isLocal && lowerUrl.startsWith("wss://")) {
+    // Fix incorrect wss:// on local relays
+    normalized = "ws://" + normalized.slice(6);
   }
 
   // Remove trailing slash

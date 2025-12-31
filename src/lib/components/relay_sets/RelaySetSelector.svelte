@@ -83,6 +83,18 @@
     await updateActiveRelays();
   }
 
+  // Invert all relay selections for a set
+  async function handleInvertRelays(set: RelaySet) {
+    const newEnabled = new Set<string>();
+    for (const relayUrl of set.relays) {
+      if (!enabledRelays.has(relayUrl)) {
+        newEnabled.add(relayUrl);
+      }
+    }
+    enabledRelays = newEnabled;
+    await updateActiveRelays();
+  }
+
   // Update active relays based on checkbox state
   async function updateActiveRelays() {
     const relays = Array.from(enabledRelays);
@@ -229,6 +241,16 @@
           <!-- Expanded Relay List -->
           {#if expandedSetId === set.id}
             <div class="bg-gray-50 dark:bg-gray-900/50 border-t border-b border-gray-200 dark:border-gray-700">
+              {#if activeSetId === set.id}
+                <div class="flex items-center justify-end px-4 py-1.5 border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    class="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                    onclick={(e) => { e.stopPropagation(); handleInvertRelays(set); }}
+                  >
+                    Invert Selection
+                  </button>
+                </div>
+              {/if}
               {#each set.relays as relayUrl}
                 <div
                   class="flex items-center gap-2 px-4 py-1.5 pl-10 hover:bg-gray-100 dark:hover:bg-gray-800"
