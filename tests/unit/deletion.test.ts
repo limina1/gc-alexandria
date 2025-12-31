@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   canDeleteEvent,
   deleteEvent,
+  isProtectedEvent,
 } from "../../src/lib/services/deletion.ts";
 import NDK, { NDKEvent, NDKRelaySet } from "@nostr-dev-kit/ndk";
 
@@ -30,6 +31,34 @@ describe("Deletion Service", () => {
       pubkey: "test-pubkey-123",
       tagAddress: () => "30041:test-pubkey-123:test-identifier",
     } as unknown as NDKEvent;
+  });
+
+  describe("isProtectedEvent", () => {
+    it("should return true for events with a '-' tag (NIP-70)", () => {
+      const protectedEvent = {
+        tags: [["d", "identifier"], ["-"]],
+      } as unknown as NDKEvent;
+
+      expect(isProtectedEvent(protectedEvent)).toBe(true);
+    });
+
+    it("should return false for events without a '-' tag", () => {
+      const normalEvent = {
+        tags: [["d", "identifier"], ["e", "some-id"]],
+      } as unknown as NDKEvent;
+
+      expect(isProtectedEvent(normalEvent)).toBe(false);
+    });
+
+    it("should return false for null/undefined events", () => {
+      expect(isProtectedEvent(null)).toBe(false);
+      expect(isProtectedEvent(undefined)).toBe(false);
+    });
+
+    it("should return false for events with no tags", () => {
+      const eventNoTags = {} as unknown as NDKEvent;
+      expect(isProtectedEvent(eventNoTags)).toBe(false);
+    });
   });
 
   describe("canDeleteEvent", () => {

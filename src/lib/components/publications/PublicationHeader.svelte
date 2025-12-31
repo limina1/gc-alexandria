@@ -8,9 +8,10 @@
   import LazyImage from "$components/util/LazyImage.svelte";
   import { generateDarkPastelColor } from "$lib/utils/image_utils";
   import { indexKind } from "$lib/consts";
-  import { deleteEvent } from "$lib/services/deletion";
+  import { deleteEvent, isProtectedEvent } from "$lib/services/deletion";
+  import { invalidateAll } from "$app/navigation";
 
-  const { event } = $props<{ event: NDKEvent }>();
+  const { event, onDeleted } = $props<{ event: NDKEvent; onDeleted?: () => void }>();
 
   const ndk = getNdkContext();
 
@@ -28,11 +29,16 @@
       await deleteEvent({
         eventAddress: event.tagAddress(),
         eventKind: event.kind,
+        originalEvent: event,
         reason: "User deleted publication",
         onSuccess: (deletionEventId) => {
           console.log("[PublicationHeader] Deletion event published:", deletionEventId);
-          // Optionally refresh the feed or remove the card
-          window.location.reload();
+          // Notify parent or invalidate data - avoid full page reload
+          if (onDeleted) {
+            onDeleted();
+          } else {
+            invalidateAll();
+          }
         },
         onError: (error) => {
           console.error("[PublicationHeader] Deletion failed:", error);
