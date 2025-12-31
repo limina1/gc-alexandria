@@ -36,7 +36,7 @@
   import TableOfContents from "./TableOfContents.svelte";
   import type { TableOfContents as TocType } from "./table_of_contents.svelte";
   import ArticleNav from "$components/util/ArticleNav.svelte";
-  import { deleteEvent } from "$lib/services/deletion";
+  import { deleteEvent, isProtectedEvent } from "$lib/services/deletion";
   import { getNdkContext, activeOutboxRelays } from "$lib/ndk";
   import { goto } from "$app/navigation";
   import { getMatchingTags } from "$lib/utils/nostrUtils";
@@ -787,6 +787,7 @@
         {
           eventAddress: indexEvent.tagAddress(),
           eventKind: indexEvent.kind,
+          originalEvent: indexEvent,
           reason: "User deleted publication",
           onSuccess: () => {
             publicationDeleted = true;

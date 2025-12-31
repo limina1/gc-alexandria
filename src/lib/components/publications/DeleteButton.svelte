@@ -4,7 +4,7 @@
   import { getContext } from "svelte";
   import type NDK from "@nostr-dev-kit/ndk";
   import type { NDKEvent } from "@nostr-dev-kit/ndk";
-  import { deleteEvent, canDeleteEvent } from "$lib/services/deletion";
+  import { deleteEvent, canDeleteEvent, isProtectedEvent } from "$lib/services/deletion";
   import { userStore } from "$lib/stores/userStore";
 
   let {
@@ -48,6 +48,7 @@
         eventId: resolvedEvent.id,
         eventAddress: address,
         eventKind: resolvedEvent.kind,
+        originalEvent: resolvedEvent,
         reason: "Deleted by author",
         onSuccess: (deletionEventId) => {
           console.log(`[DeleteButton] Published deletion event: ${deletionEventId}`);

@@ -15,7 +15,8 @@
   import NDK from "@nostr-dev-kit/ndk";
   import CardActions from "$components/util/CardActions.svelte";
   import SectionComments from "./SectionComments.svelte";
-  import { deleteEvent } from "$lib/services/deletion";
+  import { deleteEvent, isProtectedEvent } from "$lib/services/deletion";
+  import { invalidateAll } from "$app/navigation";
 
   let {
     address,
@@ -200,10 +201,11 @@
         {
           eventAddress: address,
           eventKind: event.kind,
+          originalEvent: event,
           reason: "User deleted section",
           onSuccess: () => {
-            // Refresh the page to reflect the deletion
-            window.location.reload();
+            // Invalidate data to reflect the deletion - avoid full page reload
+            invalidateAll();
           },
           onError: (error) => {
             console.error("[PublicationSection] Deletion failed:", error);

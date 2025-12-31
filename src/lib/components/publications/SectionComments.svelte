@@ -6,7 +6,7 @@
   import { ChevronDownOutline, ChevronRightOutline, DotsVerticalOutline, TrashBinOutline, ClipboardCleanOutline, EyeOutline } from "flowbite-svelte-icons";
   import { nip19 } from "nostr-tools";
   import { Button, Popover, Modal, Textarea, P } from "flowbite-svelte";
-  import { deleteEvent, canDeleteEvent } from "$lib/services/deletion";
+  import { deleteEvent, canDeleteEvent, isProtectedEvent } from "$lib/services/deletion";
   import { userStore } from "$lib/stores/userStore";
   import { goto } from "$app/navigation";
 
@@ -308,6 +308,7 @@
       const result = await deleteEvent({
         eventId: comment.id,
         eventKind: comment.kind,
+        originalEvent: comment,
         reason: 'User deleted comment',
       }, ndk);
 

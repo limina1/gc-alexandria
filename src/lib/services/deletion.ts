@@ -5,6 +5,8 @@ export interface DeletionOptions {
   eventAddress?: string;
   eventKind?: number;
   reason?: string;
+  /** The original event being deleted - used to check for protected status (NIP-70) */
+  originalEvent?: NDKEvent;
   onSuccess?: (deletionEventId: string) => void;
   onError?: (error: string) => void;
 }
@@ -13,6 +15,17 @@ export interface DeletionResult {
   success: boolean;
   deletionEventId?: string;
   error?: string;
+}
+
+/**
+ * Checks if an event is protected (NIP-70)
+ * Protected events have a "-" tag and are only accepted by relays that support write protection
+ * @param event - The event to check
+ * @returns True if the event has a "-" tag
+ */
+export function isProtectedEvent(event: NDKEvent | null | undefined): boolean {
+  if (!event?.tags) return false;
+  return event.tags.some((tag) => tag[0] === "-");
 }
 
 /**
@@ -25,8 +38,15 @@ export async function deleteEvent(
   options: DeletionOptions,
   ndk: NDK,
 ): Promise<DeletionResult> {
-  const { eventId, eventAddress, eventKind, reason = "", onSuccess, onError } =
-    options;
+  const {
+    eventId,
+    eventAddress,
+    eventKind,
+    reason = "",
+    originalEvent,
+    onSuccess,
+    onError,
+  } = options;
 
   if (!eventId && !eventAddress) {
     const error = "Either eventId or eventAddress must be provided";
@@ -64,6 +84,12 @@ export async function deleteEvent(
     if (eventKind) {
       // Add 'k' tag for event kind (recommended by NIP-09)
       tags.push(["k", eventKind.toString()]);
+    }
+
+    // Add '-' tag if the original event is protected (NIP-70)
+    // This is required for relays that only accept write-protected events
+    if (isProtectedEvent(originalEvent)) {
+      tags.push(["-"]);
     }
 
     deletionEvent.tags = tags;
