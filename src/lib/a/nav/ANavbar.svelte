@@ -121,8 +121,7 @@
       </P>
     </div>
   </NavBrand>
-<div class="flex md:order-2 gap-2">
-    <RelaySetSelector />
+<div class="flex md:order-2">
     <NavHamburger />
   </div>
   <NavUl class="order-1 ml-auto items-center" classes={{ ul: "items-center" }}>
@@ -146,6 +145,11 @@
     </MegaMenu>
     <NavLi class="navbar-menu-item">
       <DarkMode />
+    </NavLi>
+    <NavLi class="navbar-menu-item px-2">
+      <div class="border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+        <RelaySetSelector />
+      </div>
     </NavLi>
     <NavLi class="navbar-menu-item">
       <Profile />
