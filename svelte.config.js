@@ -1,4 +1,4 @@
-import adapter from "@sveltejs/adapter-node";
+import adapter from "@deno/svelte-adapter";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,7 +8,7 @@ const config = {
   preprocess: [vitePreprocess()],
 
   kit: {
-    // Deno adapter
+    // Deno Deploy adapter
     adapter: adapter(),
     alias: {
       $lib: "src/lib",

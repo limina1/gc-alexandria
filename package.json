@@ -44,6 +44,7 @@
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
+    "@deno/svelte-adapter": "^0.1.1",
     "@playwright/test": "^1.54.1",
     "@sveltejs/adapter-auto": "^6.0.1",
     "@sveltejs/adapter-node": "^5.2.13",
