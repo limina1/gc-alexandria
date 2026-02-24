@@ -2,9 +2,12 @@ import { writable } from "svelte/store";
 
 const KEY = "alexandria/theme";
 
-const initial =
+let initial =
   (typeof localStorage !== "undefined" && localStorage.getItem(KEY)) ||
-  "light";
+  "medschlr";
+
+// Migrate old default to medschlr
+if (initial === "light") initial = "medschlr";
 
 export const theme = writable(initial);
 
@@ -16,7 +19,7 @@ theme.subscribe((v) => {
 
     // Add .dark class for non-light themes (ocean, forrest are dark themes)
     // Remove .dark class for light theme
-    if (themeValue === "light") {
+    if (themeValue === "light" || themeValue === "medschlr") {
       document.documentElement.classList.remove("dark");
     } else {
       document.documentElement.classList.add("dark");

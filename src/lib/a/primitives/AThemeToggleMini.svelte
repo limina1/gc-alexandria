@@ -47,7 +47,7 @@
   import { onMount } from "svelte";
   import { setTheme, theme as themeStore } from "$lib/stores/themeStore";
 
-  let theme = $state<string>("light");
+  let theme = $state<string>("medschlr");
 
   onMount(() => {
     return themeStore.subscribe((v) => (theme = String(v)));
@@ -64,6 +64,9 @@
 </Button>
 <Dropdown simple class="w-44">
   <DropdownGroup class="space-y-3 p-3">
+    <li>
+      <Radio name="group1" bind:group={theme} value="medschlr">MedSchlr</Radio>
+    </li>
     <li>
       <Radio name="group1" bind:group={theme} value="light">Light</Radio>
     </li>

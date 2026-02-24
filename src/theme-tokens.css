@@ -73,3 +73,20 @@
   --brand-primary-300: #9fda9f;
   --brand-primary-200: #b8e6b8;
 }
+
+/* MedSchlr theme: cool steel-blue palette */
+:root[data-theme="medschlr"] {
+  --brand-primary-0: #f7fafc;
+  --brand-primary-50: #edf5f9;
+  --brand-primary-100: #d9eaf3;
+  --brand-primary-200: #b3d6e7;
+  --brand-primary-300: #8dc1da;
+  --brand-primary-400: #67adce;
+  --brand-primary-500: #4a98c2;
+  --brand-primary-600: #3b7a9b;
+  --brand-primary-700: #2c5b74;
+  --brand-primary-800: #1e3d4d;
+  --brand-primary-900: #0f1e27;
+  --brand-primary-950: #091620;
+  --brand-primary-1000: #060e14;
+}
